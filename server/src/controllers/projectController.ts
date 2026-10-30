@@ -193,6 +193,16 @@ export const updateProject = async (req: AuthenticatedRequest, res: Response, ne
       return;
     }
 
+    // Authorization check: Only project owner, LEAD, or ADMIN can update
+    const userRole = req.user!.role;
+    if (existing.ownerId !== userId && userRole !== 'ADMIN' && userRole !== 'LEAD') {
+      res.status(403).json({
+        success: false,
+        message: 'You are not authorized to update this project',
+      });
+      return;
+    }
+
     const updated = await prisma.project.update({
       where: { id },
       data: {
@@ -240,6 +250,16 @@ export const deleteProject = async (req: AuthenticatedRequest, res: Response, ne
     const existing = await prisma.project.findUnique({ where: { id } });
     if (!existing) {
       res.status(404).json({ success: false, message: 'Project not found' });
+      return;
+    }
+
+    // Authorization check: Only project owner, LEAD, or ADMIN can delete
+    const userRole = req.user!.role;
+    if (existing.ownerId !== userId && userRole !== 'ADMIN' && userRole !== 'LEAD') {
+      res.status(403).json({
+        success: false,
+        message: 'You are not authorized to delete this project',
+      });
       return;
     }
 

@@ -406,6 +406,21 @@ export const deleteTask = async (req: AuthenticatedRequest, res: Response, next:
       return;
     }
 
+    // Authorization check: Only task creator, project owner, LEAD, or ADMIN can delete
+    const userRole = req.user!.role;
+    if (
+      existing.creatorId !== userId &&
+      existing.project.ownerId !== userId &&
+      userRole !== 'ADMIN' &&
+      userRole !== 'LEAD'
+    ) {
+      res.status(403).json({
+        success: false,
+        message: 'You are not authorized to delete this task',
+      });
+      return;
+    }
+
     await prisma.task.delete({ where: { id } });
 
     await prisma.activity.create({
