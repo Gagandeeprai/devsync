@@ -259,6 +259,30 @@ Access the application in your browser at: **`http://localhost:5173`**
 
 ---
 
+## 🐘 Connecting and Inspecting with pgAdmin 4
+
+DevSync uses standard PostgreSQL running locally on port `5432`. You can connect and inspect all tables and data live in pgAdmin 4:
+
+### 1. Connection Parameters in pgAdmin 4
+- **Host name/address**: `localhost` (or `127.0.0.1`)
+- **Port**: `5432`
+- **Maintenance database**: `devsync`
+- **Username**: `devsync` (or `postgres`)
+- **Password**: `devsync`
+
+### 2. Browsing Tables in pgAdmin 4
+1. In pgAdmin 4's left sidebar, expand: **Servers** > **DevSync** (or your server name).
+2. Expand **Databases** > **devsync** > **Schemas** > **public** > **Tables**.
+3. You will see all 5 application tables:
+   - `User` — Registered user accounts, bcrypt hashed passwords, names, avatars, timestamps.
+   - `Project` — Projects with owner foreign keys, deadlines, and project statuses.
+   - `Task` — Tasks with project/assignee foreign keys, column order, priorities, and statuses.
+   - `Activity` — Real-time event audit trail records.
+   - `_prisma_migrations` — Prisma migration version tracking ledger.
+4. Right-click any table (e.g., `User` or `Task`) and choose **View/Edit Data** > **All Rows** to view live records.
+
+---
+
 ## 🎓 Demonstration Sequence for Faculty Review
 
 Use this 2-minute walkthrough to demonstrate all required full-stack competencies:
