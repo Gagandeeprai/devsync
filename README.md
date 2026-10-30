@@ -66,6 +66,36 @@ Real screenshots captured directly from the running application:
 
 DevSync is structured as an isolated two-tier client/server architecture with a shared Prisma database layer:
 
+```mermaid
+flowchart TD
+    subgraph ClientLayer["Frontend Client - React 18 + Vite"]
+        UI["Tailwind CSS + shadcn/ui Design System"]
+        Router["React Router 6 - Protected Route Guards"]
+        Store["Zustand Stores - Auth, Projects, Tasks, UI"]
+        APIClient["Axios / Fetch Client + JWT Interceptors"]
+        Router --> UI
+        UI --> Store
+        Store --> APIClient
+    end
+
+    subgraph ServerLayer["Backend REST API - Node.js + Express + TypeScript"]
+        AuthMiddleware["JWT Authentication & Zod Validation"]
+        Controllers["Express Route Controllers"]
+        PrismaService["Prisma ORM 5 Query Engine"]
+        APIClient -->|"REST API Requests - Bearer JWT (Port 5000)"| AuthMiddleware
+        AuthMiddleware --> Controllers
+        Controllers --> PrismaService
+    end
+
+    subgraph DatabaseLayer["Persistent Storage Layer - PostgreSQL 18"]
+        PostgresDB[("PostgreSQL Database - devsync (Port 5432)")]
+        PrismaService -->|"Native TCP Connection"| PostgresDB
+        pgAdmin["pgAdmin 4 GUI Tool"] -.->|"Direct TCP Inspection"| PostgresDB
+    end
+```
+
+### Directory Structure
+
 ```
 devsync/
 ├── client/                     # Frontend Single Page Application (SPA)
@@ -106,48 +136,62 @@ devsync/
 
 ### Entity Relationship Model
 
-```
-+-------------------------------------------------------+
-|                         User                          |
-+-------------------------------------------------------+
-| id            : String (UUID, Primary Key)            |
-| email         : String (Unique, Indexed)              |
-| passwordHash  : String                                |
-| name          : String                                |
-| avatarUrl     : String?                               |
-| role          : UserRole (ADMIN | LEAD | DEVELOPER)   |
-| createdAt     : DateTime                              |
-| updatedAt     : DateTime                              |
-+-------------------------------------------------------+
-        | 1                     | 1                 | 1
-        | owns                  | creates           | assigned
-        v N                     v N                 v N
-+--------------------+  +-----------------------------------------------+
-|      Project       |  |                     Task                      |
-+--------------------+  +-----------------------------------------------+
-| id          : UUID |  | id          : String (UUID, Primary Key)      |
-| name        : Str  |  | title       : String                          |
-| description : Str? |  | description : String?                         |
-| status      : Enum |  | status      : TaskStatus (Indexed)            |
-| deadline    : Date?|  | priority    : TaskPriority (Indexed)          |
-| ownerId     : UUID |  | dueDate     : DateTime?                       |
-| createdAt   : Date |  | order       : Float (Kanban Column Position)  |
-| updatedAt   : Date |  | projectId   : String (UUID, Foreign Key)      |
-+--------------------+  | assigneeId  : String? (UUID, Foreign Key)     |
-        | 1             | creatorId   : String (UUID, Foreign Key)      |
-        | has           | createdAt   : DateTime                        |
-        v N             | updatedAt   : DateTime                        |
-+--------------------+  +-----------------------------------------------+
-|      Activity      |                          | 1
-+--------------------+                          | has
-| id        : UUID   |<-------------------------+
-| action    : String |
-| details   : String |
-| userId    : UUID   |
-| projectId : UUID?  |
-| taskId    : UUID?  |
-| createdAt : Date   |
-+--------------------+
+```mermaid
+erDiagram
+    User ||--o{ Project : "owns"
+    User ||--o{ Task : "assigned_to"
+    User ||--o{ Task : "creates"
+    User ||--o{ Activity : "performs"
+    Project ||--o{ Task : "contains"
+    Project ||--o{ Activity : "tracks"
+    Task ||--o{ Activity : "triggers"
+
+    User {
+        string id PK
+        string email UK
+        string passwordHash
+        string name
+        string avatarUrl
+        UserRole role
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Project {
+        string id PK
+        string name
+        string description
+        ProjectStatus status
+        datetime deadline
+        string ownerId FK
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Task {
+        string id PK
+        string title
+        string description
+        TaskStatus status
+        TaskPriority priority
+        datetime dueDate
+        float order
+        string projectId FK
+        string assigneeId FK
+        string creatorId FK
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Activity {
+        string id PK
+        string action
+        string details
+        string userId FK
+        string projectId FK
+        string taskId FK
+        datetime createdAt
+    }
 ```
 
 ### Relational Constraints
@@ -168,6 +212,31 @@ All routes (except `/api/auth/register`, `/api/auth/login`, and `/api/health`) r
 - `GET /api/auth/me` — Retrieve current authenticated user profile.
 - `PUT /api/auth/profile` — Update user name and avatar URL.
 
+#### Authentication & Authorization Sequence
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as Developer
+    participant UI as DevSync Client (React)
+    participant API as DevSync API (Express)
+    participant DB as PostgreSQL (Prisma)
+
+    Dev->>UI: Submit credentials (Email & Password)
+    UI->>API: POST /api/auth/login
+    API->>DB: Query User by unique email
+    DB-->>API: User record + bcrypt hash
+    API->>API: bcrypt.compare(password, hash)
+    API->>API: Generate signed JWT (7-day expiry)
+    API-->>UI: 200 OK + JWT Token & User Profile
+    UI->>UI: Persist JWT to localStorage & Zustand store
+    UI->>Dev: Redirect to Protected Dashboard
+    UI->>API: GET /api/dashboard/stats (Bearer JWT)
+    API->>API: Verify JWT signature & decode payload
+    API->>DB: Aggregate projects, tasks & activity logs
+    DB-->>API: Calculated metrics
+    API-->>UI: 200 OK + Dashboard stats
+```
+
 ### 2. Project Endpoints
 - `GET /api/projects` — List all projects with aggregated task counts, completed tasks, and completion %.
 - `GET /api/projects/:id` — Get project details with associated tasks and lead profile.
@@ -182,6 +251,18 @@ All routes (except `/api/auth/register`, `/api/auth/login`, and `/api/health`) r
 - `PUT /api/tasks/:id` — Update task details, priority, assignee, and due date.
 - `PATCH /api/tasks/:id/status` — Drag-and-drop Kanban status and order update.
 - `DELETE /api/tasks/:id` — Delete task (Enforces Creator, Project Owner, Lead, or Admin permissions).
+
+#### Kanban Delivery State Machine
+```mermaid
+stateDiagram-v2
+    [*] --> BACKLOG : Task Created
+    BACKLOG --> TODO : Groomed & Scheduled
+    TODO --> IN_PROGRESS : Claimed by Assignee
+    IN_PROGRESS --> REVIEW : PR Submitted
+    REVIEW --> DONE : Verified & Closed
+    REVIEW --> IN_PROGRESS : Changes Requested
+    DONE --> [*]
+```
 
 ### 4. Dashboard & Team Endpoints
 - `GET /api/dashboard/stats` — Real-time PostgreSQL aggregation of total projects, tasks, completed/pending tasks, priority counts, status distribution, and recent audit logs.
