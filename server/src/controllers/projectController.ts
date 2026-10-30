@@ -5,8 +5,8 @@ import { AuthenticatedRequest } from '../types';
 import { ProjectStatus } from '@prisma/client';
 
 const projectSchema = z.object({
-  name: z.string().min(2, 'Project name must be at least 2 characters'),
-  description: z.string().optional().nullable(),
+  name: z.string().min(2, 'Project name must be at least 2 characters').max(100, 'Project name cannot exceed 100 characters'),
+  description: z.string().max(2000, 'Description cannot exceed 2000 characters').optional().nullable(),
   status: z.nativeEnum(ProjectStatus).optional(),
   deadline: z.string().datetime().optional().nullable(),
 });

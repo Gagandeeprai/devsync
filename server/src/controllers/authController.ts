@@ -9,16 +9,16 @@ const JWT_SECRET = process.env.JWT_SECRET || 'devsync-default-super-secret-key';
 const JWT_EXPIRES_IN = '7d';
 
 const registerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  name: z.string().min(2, 'Name must be at least 2 characters').max(80, 'Name must not exceed 80 characters'),
+  email: z.string().email('Invalid email address').max(120, 'Email must not exceed 120 characters'),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(72, 'Password must not exceed 72 characters'),
   role: z.enum(['ADMIN', 'LEAD', 'DEVELOPER']).optional(),
   avatarUrl: z.string().url().optional().or(z.literal('')),
 });
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email('Invalid email address').max(120),
+  password: z.string().min(1, 'Password is required').max(72),
 });
 
 const updateProfileSchema = z.object({

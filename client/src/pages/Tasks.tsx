@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   CheckSquare,
   Plus,
@@ -23,14 +24,25 @@ import { formatDate, isOverdue } from '../lib/utils';
 import { TaskStatus, TaskPriority } from '../types';
 
 export const Tasks: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialStatus = searchParams.get('status') || 'ALL';
+  const initialProjectId = searchParams.get('projectId') || 'ALL';
+
   const { tasks, fetchTasks, updateTaskStatus, deleteTask, isLoading } = useTaskStore();
   const { projects, fetchProjects } = useProjectStore();
   const { openCreateTask, openEditTask } = useUiStore();
 
   const [search, setSearch] = useState('');
-  const [selectedProject, setSelectedProject] = useState<string>('ALL');
-  const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
+  const [selectedProject, setSelectedProject] = useState<string>(initialProjectId);
+  const [selectedStatus, setSelectedStatus] = useState<string>(initialStatus);
   const [selectedPriority, setSelectedPriority] = useState<string>('ALL');
+
+  useEffect(() => {
+    const urlStatus = searchParams.get('status');
+    const urlProject = searchParams.get('projectId');
+    if (urlStatus) setSelectedStatus(urlStatus);
+    if (urlProject) setSelectedProject(urlProject);
+  }, [searchParams]);
 
   useEffect(() => {
     fetchTasks();

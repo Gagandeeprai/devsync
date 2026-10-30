@@ -5,8 +5,8 @@ import { AuthenticatedRequest } from '../types';
 import { TaskStatus, TaskPriority } from '@prisma/client';
 
 const taskCreateSchema = z.object({
-  title: z.string().min(2, 'Title must be at least 2 characters'),
-  description: z.string().optional().nullable(),
+  title: z.string().min(2, 'Title must be at least 2 characters').max(150, 'Title must not exceed 150 characters'),
+  description: z.string().max(4000, 'Description must not exceed 4000 characters').optional().nullable(),
   status: z.nativeEnum(TaskStatus).optional(),
   priority: z.nativeEnum(TaskPriority).optional(),
   dueDate: z.string().datetime().optional().nullable(),
@@ -16,8 +16,8 @@ const taskCreateSchema = z.object({
 });
 
 const taskUpdateSchema = z.object({
-  title: z.string().min(2, 'Title must be at least 2 characters').optional(),
-  description: z.string().optional().nullable(),
+  title: z.string().min(2, 'Title must be at least 2 characters').max(150, 'Title must not exceed 150 characters').optional(),
+  description: z.string().max(4000, 'Description must not exceed 4000 characters').optional().nullable(),
   status: z.nativeEnum(TaskStatus).optional(),
   priority: z.nativeEnum(TaskPriority).optional(),
   dueDate: z.string().datetime().optional().nullable(),
