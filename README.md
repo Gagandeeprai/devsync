@@ -67,7 +67,7 @@ Real screenshots captured directly from the running application:
 DevSync is structured as an isolated two-tier client/server architecture with a shared Prisma database layer:
 
 ```
-skill-lab2/
+devsync/
 ├── client/                     # Frontend Single Page Application (SPA)
 │   ├── src/
 │   │   ├── api/                # Axios/Fetch API client with JWT interceptors
