@@ -425,3 +425,4 @@ export const deleteTask = async (req: AuthenticatedRequest, res: Response, next:
     next(error);
   }
 };
+

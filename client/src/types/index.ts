@@ -92,3 +92,4 @@ export interface DashboardStats {
   recentProjects: Project[];
   upcomingTasks: Task[];
 }
+

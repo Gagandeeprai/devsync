@@ -261,3 +261,4 @@ export const deleteProject = async (req: AuthenticatedRequest, res: Response, ne
     next(error);
   }
 };
+

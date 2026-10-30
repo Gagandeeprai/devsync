@@ -134,3 +134,4 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.setItem('devsync_user', JSON.stringify(user));
   },
 }));
+

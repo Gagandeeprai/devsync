@@ -4,6 +4,7 @@ import { useUiStore } from '../../store/uiStore';
 import { useTaskStore } from '../../store/taskStore';
 import { useProjectStore } from '../../store/projectStore';
 import { TaskStatus, TaskPriority, User } from '../../types';
+import { Button } from '../ui/Button';
 import { api } from '../../api/client';
 
 export const CreateTaskModal: React.FC = () => {
@@ -22,16 +23,24 @@ export const CreateTaskModal: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isCreateTaskOpen) {
+        closeCreateTask();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCreateTaskOpen, closeCreateTask]);
+
+  useEffect(() => {
     if (isCreateTaskOpen) {
       if (projects.length === 0) {
         fetchProjects();
       }
-      // Load team users
       api.get<{ success: boolean; users: User[] }>('/users')
         .then((res) => setUsers(res.users))
         .catch(console.error);
 
-      // Prepopulate defaults
       if (defaultTaskStatus) setStatus(defaultTaskStatus);
       if (defaultProjectId) {
         setProjectId(defaultProjectId);
@@ -218,20 +227,22 @@ export const CreateTaskModal: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-surface-border mt-6">
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={closeCreateTask}
-              className="px-4 py-2 text-xs font-medium text-slate-300 hover:text-white bg-surface-100 hover:bg-surface-50 border border-surface-border rounded-xl transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={isSubmitting || !title.trim() || !projectId}
-              className="px-4 py-2 text-xs font-medium text-white bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all"
+              size="sm"
+              isLoading={isSubmitting}
+              disabled={!title.trim() || !projectId}
             >
-              {isSubmitting ? 'Creating...' : 'Create Task'}
-            </button>
+              Create Task
+            </Button>
           </div>
         </form>
       </div>

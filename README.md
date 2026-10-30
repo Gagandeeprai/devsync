@@ -185,3 +185,4 @@ The database seed comes with pre-populated engineering projects, tasks, and user
 - `GET /api/dashboard/stats` - Total projects, tasks, completed/pending, velocity, recent activities
 - `GET /api/users` - List team members for assignment
 - `GET /api/health` - Server healthcheck
+

@@ -16,6 +16,9 @@ import { useProjectStore } from '../store/projectStore';
 import { useUiStore } from '../store/uiStore';
 import { PriorityBadge, StatusBadge } from '../components/ui/Badge';
 import { Avatar } from '../components/ui/Avatar';
+import { Button } from '../components/ui/Button';
+import { Skeleton } from '../components/ui/Skeleton';
+import { EmptyState } from '../components/ui/EmptyState';
 import { formatDate, isOverdue } from '../lib/utils';
 import { TaskStatus, TaskPriority } from '../types';
 
@@ -72,7 +75,7 @@ export const Tasks: React.FC = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Filter tasks by name or details..."
-              className="w-full pl-9 pr-3 py-2 bg-[#12131a] border border-surface-border rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-brand-500"
+              className="w-full pl-9 pr-3.5 py-2.5 bg-[#12131a] border border-surface-border rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-brand-500 transition-all"
             />
           </div>
 
@@ -80,9 +83,9 @@ export const Tasks: React.FC = () => {
           <select
             value={selectedProject}
             onChange={(e) => setSelectedProject(e.target.value)}
-            className="px-3 py-2 bg-[#12131a] border border-surface-border rounded-xl text-slate-300 text-xs focus:outline-none focus:border-brand-500"
+            className="px-3.5 py-2.5 bg-[#12131a] border border-surface-border rounded-xl text-slate-300 text-xs font-medium focus:outline-none focus:border-brand-500"
           >
-            <option value="ALL">All Projects</option>
+            <option value="ALL">All Projects ({projects.length})</option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -94,7 +97,7 @@ export const Tasks: React.FC = () => {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-3 py-2 bg-[#12131a] border border-surface-border rounded-xl text-slate-300 text-xs focus:outline-none focus:border-brand-500"
+            className="px-3.5 py-2.5 bg-[#12131a] border border-surface-border rounded-xl text-slate-300 text-xs font-medium focus:outline-none focus:border-brand-500"
           >
             <option value="ALL">All Statuses</option>
             <option value="BACKLOG">Backlog</option>
@@ -108,7 +111,7 @@ export const Tasks: React.FC = () => {
           <select
             value={selectedPriority}
             onChange={(e) => setSelectedPriority(e.target.value)}
-            className="px-3 py-2 bg-[#12131a] border border-surface-border rounded-xl text-slate-300 text-xs focus:outline-none focus:border-brand-500"
+            className="px-3.5 py-2.5 bg-[#12131a] border border-surface-border rounded-xl text-slate-300 text-xs font-medium focus:outline-none focus:border-brand-500"
           >
             <option value="ALL">All Priorities</option>
             <option value="URGENT">Urgent</option>
@@ -118,37 +121,37 @@ export const Tasks: React.FC = () => {
           </select>
         </div>
 
-        <button
-          onClick={() => openCreateTask()}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium shadow-sm transition-all shrink-0"
-        >
+        <Button onClick={() => openCreateTask()} size="sm" className="shrink-0">
           <Plus className="w-4 h-4" />
           <span>New Task</span>
-        </button>
+        </Button>
       </div>
 
       {/* Task List Table */}
-      <div className="rounded-2xl bg-[#12131a] border border-surface-border overflow-hidden shadow-sm">
+      <div className="rounded-2xl bg-[#12131a] border border-surface-border overflow-hidden shadow-surface-card">
         <div className="p-4 border-b border-surface-border flex items-center justify-between text-xs text-slate-400 font-medium">
           <span>{filteredTasks.length} tasks matching criteria</span>
           <span className="hidden sm:inline">Click any task to inspect & edit</span>
         </div>
 
-        {filteredTasks.length === 0 ? (
-          <div className="p-12 text-center">
-            <CheckSquare className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-            <h3 className="text-sm font-semibold text-slate-200">No tasks found</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-              There are no tasks matching your current filters.
-            </p>
-            <button
-              onClick={() => openCreateTask()}
-              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              Create Task
-            </button>
+        {isLoading && tasks.length === 0 ? (
+          <div className="p-4 space-y-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Skeleton key={i} className="h-16" />
+            ))}
           </div>
+        ) : filteredTasks.length === 0 ? (
+          <EmptyState
+            icon={CheckSquare}
+            title="No tasks found"
+            description={
+              search || selectedProject !== 'ALL' || selectedStatus !== 'ALL' || selectedPriority !== 'ALL'
+                ? 'There are no engineering tasks matching your selected filters.'
+                : 'Create your first task to begin tracking work.'
+            }
+            actionLabel="Create Task"
+            onAction={() => openCreateTask()}
+          />
         ) : (
           <div className="divide-y divide-surface-border/60">
             {filteredTasks.map((t) => {
@@ -208,7 +211,7 @@ export const Tasks: React.FC = () => {
                     {t.dueDate && (
                       <span
                         className={`text-xs font-mono hidden md:flex items-center gap-1 ${
-                          overdue ? 'text-rose-400 font-medium' : 'text-slate-400'
+                          overdue ? 'text-rose-400 font-semibold' : 'text-slate-400'
                         }`}
                       >
                         <Calendar className="w-3 h-3" />

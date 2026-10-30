@@ -132,3 +132,4 @@ export const PROJECT_STATUS_CONFIG: Record<
     border: 'border-zinc-700/50',
   },
 };
+

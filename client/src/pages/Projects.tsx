@@ -6,17 +6,20 @@ import {
   Search,
   Calendar,
   CheckCircle2,
-  MoreVertical,
   Trash2,
   Edit2,
   Kanban,
   Clock,
   ArrowRight,
+  X,
 } from 'lucide-react';
 import { useProjectStore } from '../store/projectStore';
 import { useUiStore } from '../store/uiStore';
 import { ProjectStatusBadge } from '../components/ui/Badge';
 import { Avatar } from '../components/ui/Avatar';
+import { Button } from '../components/ui/Button';
+import { Skeleton } from '../components/ui/Skeleton';
+import { EmptyState } from '../components/ui/EmptyState';
 import { formatDate, isOverdue } from '../lib/utils';
 import { Project, ProjectStatus } from '../types';
 
@@ -27,6 +30,7 @@ export const Projects: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     fetchProjects();
@@ -59,12 +63,14 @@ export const Projects: React.FC = () => {
     e.preventDefault();
     if (!editingProject) return;
 
+    setIsSaving(true);
     await updateProject(editingProject.id, {
       name: editingProject.name,
       description: editingProject.description,
       status: editingProject.status,
       deadline: editingProject.deadline,
     });
+    setIsSaving(false);
     setEditingProject(null);
   };
 
@@ -79,19 +85,16 @@ export const Projects: React.FC = () => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search projects..."
-              className="w-full pl-9 pr-3.5 py-2 bg-[#12131a] border border-surface-border rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-brand-500"
+              placeholder="Search projects by name or keywords..."
+              className="w-full pl-10 pr-3.5 py-2.5 bg-[#12131a] border border-surface-border rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:border-brand-500 transition-all"
             />
           </div>
         </div>
 
-        <button
-          onClick={openCreateProject}
-          className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium shadow-sm transition-all"
-        >
+        <Button onClick={openCreateProject} size="sm">
           <Plus className="w-4 h-4" />
           <span>New Project</span>
-        </button>
+        </Button>
       </div>
 
       {/* Status Filter Tabs */}
@@ -106,9 +109,9 @@ export const Projects: React.FC = () => {
           <button
             key={tab.value}
             onClick={() => setStatusFilter(tab.value)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
               statusFilter === tab.value
-                ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20'
+                ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20 font-semibold'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-surface-100'
             }`}
           >
@@ -117,24 +120,25 @@ export const Projects: React.FC = () => {
         ))}
       </div>
 
-      {/* Projects Grid */}
-      {filteredProjects.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl bg-[#12131a] border border-surface-border/80">
-          <FolderGit2 className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-          <h3 className="text-sm font-semibold text-slate-200">No projects found</h3>
-          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-            {search || statusFilter !== 'ALL'
-              ? 'Try adjusting your search criteria or status filter.'
-              : 'Get started by creating your first collaboration project.'}
-          </p>
-          <button
-            onClick={openCreateProject}
-            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium"
-          >
-            <Plus className="w-4 h-4" />
-            Create Project
-          </button>
+      {/* Loading Skeletons */}
+      {isLoading && projects.length === 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Skeleton key={i} className="h-56" />
+          ))}
         </div>
+      ) : filteredProjects.length === 0 ? (
+        <EmptyState
+          icon={FolderGit2}
+          title="No projects found"
+          description={
+            search || statusFilter !== 'ALL'
+              ? 'Try adjusting your search criteria or switching status filter tabs.'
+              : 'Start collaborating by initializing your first engineering project.'
+          }
+          actionLabel="Create Project"
+          onAction={openCreateProject}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredProjects.map((p) => {
@@ -143,7 +147,7 @@ export const Projects: React.FC = () => {
             return (
               <div
                 key={p.id}
-                className="rounded-2xl bg-[#12131a] border border-surface-border hover:border-surface-borderHover p-5 shadow-sm transition-all flex flex-col justify-between group"
+                className="rounded-2xl bg-[#12131a] border border-surface-border hover:border-surface-borderHover p-5 shadow-surface-card transition-all duration-200 flex flex-col justify-between group"
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">
@@ -172,7 +176,7 @@ export const Projects: React.FC = () => {
                     </div>
                   </div>
 
-                  <p className="mt-2 text-xs text-slate-400 line-clamp-2 min-h-[2rem]">
+                  <p className="mt-2 text-xs text-slate-400 line-clamp-2 min-h-[2rem] leading-relaxed">
                     {p.description || 'No description provided.'}
                   </p>
 
@@ -230,13 +234,22 @@ export const Projects: React.FC = () => {
       {editingProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
             onClick={() => setEditingProject(null)}
           />
-          <div className="relative w-full max-w-md bg-[#12131a] border border-surface-border rounded-2xl shadow-surface-card p-6 z-10">
-            <h3 className="text-base font-semibold text-slate-100 pb-3 border-b border-surface-border">
-              Edit Project
-            </h3>
+          <div className="relative w-full max-w-md bg-[#12131a] border border-surface-border rounded-2xl shadow-surface-card p-6 z-10 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-surface-border">
+              <h3 className="text-base font-semibold text-slate-100">
+                Edit Project
+              </h3>
+              <button
+                onClick={() => setEditingProject(null)}
+                className="p-1 text-slate-400 hover:text-white rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
             <form onSubmit={handleSaveEdit} className="mt-4 space-y-4">
               <div>
                 <label className="block text-xs font-medium text-slate-300 mb-1">Project Name</label>
@@ -245,7 +258,7 @@ export const Projects: React.FC = () => {
                   required
                   value={editingProject.name}
                   onChange={(e) => setEditingProject({ ...editingProject, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-surface-200 border border-surface-border rounded-xl text-slate-100 text-sm focus:outline-none focus:border-brand-500"
+                  className="w-full px-3.5 py-2.5 bg-surface-200 border border-surface-border rounded-xl text-slate-100 text-sm focus:outline-none focus:border-brand-500"
                 />
               </div>
 
@@ -255,7 +268,7 @@ export const Projects: React.FC = () => {
                   rows={3}
                   value={editingProject.description || ''}
                   onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-surface-200 border border-surface-border rounded-xl text-slate-100 text-sm focus:outline-none focus:border-brand-500 resize-none"
+                  className="w-full px-3.5 py-2 bg-surface-200 border border-surface-border rounded-xl text-slate-100 text-sm focus:outline-none focus:border-brand-500 resize-none"
                 />
               </div>
 
@@ -293,19 +306,21 @@ export const Projects: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-surface-border">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setEditingProject(null)}
-                  className="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-xl"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="px-4 py-2 text-xs font-medium text-white bg-brand-600 hover:bg-brand-500 rounded-xl"
+                  size="sm"
+                  isLoading={isSaving}
                 >
                   Save Changes
-                </button>
+                </Button>
               </div>
             </form>
           </div>

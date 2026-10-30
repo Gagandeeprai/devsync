@@ -113,3 +113,4 @@ model Activity {
   @@index([projectId])
   @@index([createdAt])
 }
+

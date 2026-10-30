@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Layers, ArrowRight, Lock, Mail, Sparkles } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { Button } from '../components/ui/Button';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -48,16 +49,16 @@ export const Login: React.FC = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 px-4">
         <div className="bg-[#12131a] border border-surface-border rounded-2xl shadow-surface-card p-6 sm:p-8 backdrop-blur-xl">
           {/* Demo account quick login helper */}
-          <div className="mb-6 p-3 rounded-xl bg-surface-200/80 border border-surface-border">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-brand-300 mb-2">
+          <div className="mb-6 p-3.5 rounded-xl bg-surface-200/80 border border-surface-border">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-brand-300 mb-2.5">
               <Sparkles className="w-3.5 h-3.5 text-brand-400" />
               Quick Demo Access (1-Click)
             </div>
-            <div className="grid grid-cols-1 gap-1.5">
+            <div className="grid grid-cols-1 gap-2">
               <button
                 type="button"
                 onClick={() => handleDemoLogin('alex@devsync.io')}
-                className="text-left px-2.5 py-1.5 rounded-lg bg-surface-100 hover:bg-surface-50 text-xs text-slate-300 hover:text-white border border-surface-border/60 transition-colors flex items-center justify-between"
+                className="text-left px-3 py-2 rounded-lg bg-surface-100 hover:bg-surface-50 text-xs text-slate-300 hover:text-white border border-surface-border/60 transition-colors flex items-center justify-between"
               >
                 <span><strong>Alex Rivers</strong> (Lead Architect)</span>
                 <span className="text-[10px] text-slate-500 font-mono">alex@devsync.io</span>
@@ -65,10 +66,18 @@ export const Login: React.FC = () => {
               <button
                 type="button"
                 onClick={() => handleDemoLogin('sarah@devsync.io')}
-                className="text-left px-2.5 py-1.5 rounded-lg bg-surface-100 hover:bg-surface-50 text-xs text-slate-300 hover:text-white border border-surface-border/60 transition-colors flex items-center justify-between"
+                className="text-left px-3 py-2 rounded-lg bg-surface-100 hover:bg-surface-50 text-xs text-slate-300 hover:text-white border border-surface-border/60 transition-colors flex items-center justify-between"
               >
                 <span><strong>Sarah Chen</strong> (Full-Stack)</span>
                 <span className="text-[10px] text-slate-500 font-mono">sarah@devsync.io</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('marcus@devsync.io')}
+                className="text-left px-3 py-2 rounded-lg bg-surface-100 hover:bg-surface-50 text-xs text-slate-300 hover:text-white border border-surface-border/60 transition-colors flex items-center justify-between"
+              >
+                <span><strong>Marcus Vance</strong> (Backend)</span>
+                <span className="text-[10px] text-slate-500 font-mono">marcus@devsync.io</span>
               </button>
             </div>
           </div>
@@ -98,7 +107,7 @@ export const Login: React.FC = () => {
                 <label className="block text-xs font-medium text-slate-300">
                   Password
                 </label>
-                <span className="text-[11px] text-slate-500">Default: password123</span>
+                <span className="text-[11px] text-slate-500 font-mono">password123</span>
               </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
@@ -115,20 +124,15 @@ export const Login: React.FC = () => {
               </div>
             </div>
 
-            <button
+            <Button
               type="submit"
-              disabled={isLoading}
-              className="w-full mt-2 py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm shadow-sm transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
+              isLoading={isLoading}
+              className="w-full mt-2"
+              size="lg"
             >
-              {isLoading ? (
-                'Signing in...'
-              ) : (
-                <>
-                  <span>Sign In</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                </>
-              )}
-            </button>
+              <span>Sign In</span>
+              <ArrowRight className="w-4 h-4 ml-1" />
+            </Button>
           </form>
 
           <div className="mt-6 text-center text-xs text-slate-400">

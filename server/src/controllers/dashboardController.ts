@@ -153,3 +153,4 @@ export const getDashboardStats = async (req: AuthenticatedRequest, res: Response
     next(error);
   }
 };
+

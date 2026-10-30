@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, FolderGit2 } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
 import { useProjectStore } from '../../store/projectStore';
 import { ProjectStatus } from '../../types';
+import { Button } from '../ui/Button';
 
 export const CreateProjectModal: React.FC = () => {
   const { isCreateProjectOpen, closeCreateProject } = useUiStore();
@@ -13,6 +14,16 @@ export const CreateProjectModal: React.FC = () => {
   const [status, setStatus] = useState<ProjectStatus>('PLANNING');
   const [deadline, setDeadline] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isCreateProjectOpen) {
+        closeCreateProject();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCreateProjectOpen, closeCreateProject]);
 
   if (!isCreateProjectOpen) return null;
 
@@ -120,26 +131,27 @@ export const CreateProjectModal: React.FC = () => {
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
                 className="w-full px-3 py-2 bg-surface-200 border border-surface-border rounded-xl text-slate-200 text-sm focus:outline-none focus:border-brand-500"
-              >
-              </input>
+              />
             </div>
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-surface-border mt-6">
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={closeCreateProject}
-              className="px-4 py-2 text-xs font-medium text-slate-300 hover:text-white bg-surface-100 hover:bg-surface-50 border border-surface-border rounded-xl transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              disabled={isSubmitting || !name.trim()}
-              className="px-4 py-2 text-xs font-medium text-white bg-brand-600 hover:bg-brand-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all"
+              size="sm"
+              isLoading={isSubmitting}
+              disabled={!name.trim()}
             >
-              {isSubmitting ? 'Creating...' : 'Create Project'}
-            </button>
+              Create Project
+            </Button>
           </div>
         </form>
       </div>

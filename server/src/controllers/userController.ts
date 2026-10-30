@@ -24,3 +24,4 @@ export const listUsers = async (req: AuthenticatedRequest, res: Response, next: 
     next(error);
   }
 };
+

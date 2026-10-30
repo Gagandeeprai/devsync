@@ -71,3 +71,4 @@ export const useUiStore = create<UiState>((set) => ({
   openEditTask: (taskId) => set({ editingTaskId: taskId }),
   closeEditTask: () => set({ editingTaskId: null }),
 }));
+

@@ -208,3 +208,4 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response, ne
     next(error);
   }
 };
+

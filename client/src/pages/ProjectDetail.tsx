@@ -8,12 +8,16 @@ import {
   ArrowLeft,
   Kanban as KanbanIcon,
   ListTodo,
+  Clock,
 } from 'lucide-react';
 import { useProjectStore } from '../store/projectStore';
 import { useTaskStore } from '../store/taskStore';
 import { useUiStore } from '../store/uiStore';
 import { ProjectStatusBadge, PriorityBadge, StatusBadge } from '../components/ui/Badge';
 import { Avatar } from '../components/ui/Avatar';
+import { Button } from '../components/ui/Button';
+import { Skeleton } from '../components/ui/Skeleton';
+import { EmptyState } from '../components/ui/EmptyState';
 import { formatDate, isOverdue } from '../lib/utils';
 import { Task, TaskStatus } from '../types';
 
@@ -35,9 +39,13 @@ export const ProjectDetail: React.FC = () => {
 
   if (isLoading || !currentProject) {
     return (
-      <div className="space-y-4 animate-pulse">
-        <div className="h-32 bg-surface-200 rounded-2xl" />
-        <div className="h-96 bg-surface-200 rounded-2xl" />
+      <div className="space-y-6">
+        <Skeleton className="h-40" />
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-96" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -54,11 +62,13 @@ export const ProjectDetail: React.FC = () => {
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData('text/plain', taskId);
+    e.dataTransfer.effectAllowed = 'move';
     setDraggedTaskId(taskId);
   };
 
   const handleDragOver = (e: React.DragEvent, status: TaskStatus) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
     if (activeDropCol !== status) {
       setActiveDropCol(status);
     }
@@ -99,28 +109,28 @@ export const ProjectDetail: React.FC = () => {
       <div>
         <Link
           to="/projects"
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors mb-3"
+          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors mb-3 group"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
           Back to Projects
         </Link>
 
-        <div className="p-6 rounded-2xl bg-[#12131a] border border-surface-border flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="p-6 rounded-2xl bg-[#12131a] border border-surface-border shadow-surface-card flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-xl sm:text-2xl font-bold text-slate-100">{currentProject.name}</h2>
               <ProjectStatusBadge status={currentProject.status} />
             </div>
             <p className="text-sm text-slate-400 leading-relaxed">
-              {currentProject.description || 'No detailed description.'}
+              {currentProject.description || 'No detailed description provided.'}
             </p>
             <div className="flex items-center gap-4 text-xs text-slate-400 pt-2 flex-wrap">
               <div className="flex items-center gap-1.5">
                 <Avatar src={currentProject.owner?.avatarUrl} name={currentProject.owner?.name} size="sm" />
-                <span>Lead: {currentProject.owner?.name}</span>
+                <span>Lead: {currentProject.owner?.name || 'Architect'}</span>
               </div>
               {currentProject.deadline && (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 font-mono">
                   <Calendar className="w-3.5 h-3.5" />
                   <span>Target: {formatDate(currentProject.deadline)}</span>
                 </div>
@@ -130,20 +140,20 @@ export const ProjectDetail: React.FC = () => {
 
           <div className="flex flex-col items-start md:items-end gap-3 shrink-0">
             <div className="text-left md:text-right">
-              <div className="text-2xl font-bold font-mono text-slate-100">
+              <div className="text-2xl sm:text-3xl font-bold font-mono text-slate-100">
                 {currentProject.progress}%
               </div>
               <div className="text-xs text-slate-400">
                 {currentProject.completedTasks} of {currentProject.totalTasks} tasks completed
               </div>
             </div>
-            <button
+            <Button
               onClick={() => openCreateTask({ projectId: currentProject.id })}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium shadow-sm transition-all"
+              size="sm"
             >
               <Plus className="w-4 h-4" />
               Add Task
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -155,7 +165,7 @@ export const ProjectDetail: React.FC = () => {
             onClick={() => setActiveTab('KANBAN')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-colors ${
               activeTab === 'KANBAN'
-                ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20'
+                ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20 font-semibold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -166,7 +176,7 @@ export const ProjectDetail: React.FC = () => {
             onClick={() => setActiveTab('LIST')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-colors ${
               activeTab === 'LIST'
-                ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20'
+                ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20 font-semibold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -199,13 +209,13 @@ export const ProjectDetail: React.FC = () => {
                 <div className="flex items-center justify-between pb-3 border-b border-surface-border/60 mb-3 px-1">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-slate-200">{col.label}</span>
-                    <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-surface-100 text-slate-400 font-mono">
+                    <span className="text-[11px] px-2 py-0.5 rounded-full bg-surface-100 text-slate-400 font-mono font-medium">
                       {columnTasks.length}
                     </span>
                   </div>
                   <button
                     onClick={() => openCreateTask({ projectId: currentProject.id, status: col.status })}
-                    className="p-1 text-slate-500 hover:text-slate-200 hover:bg-surface-100 rounded"
+                    className="p-1 text-slate-500 hover:text-slate-200 hover:bg-surface-100 rounded transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
@@ -250,31 +260,41 @@ export const ProjectDetail: React.FC = () => {
 
       {/* List Tab */}
       {activeTab === 'LIST' && (
-        <div className="rounded-2xl bg-[#12131a] border border-surface-border overflow-hidden">
-          <div className="divide-y divide-surface-border/60">
-            {projectTasks.map((t) => (
-              <div
-                key={t.id}
-                onClick={() => openEditTask(t.id)}
-                className="p-4 flex items-center justify-between gap-4 hover:bg-surface-200/50 cursor-pointer transition-colors"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <StatusBadge status={t.status} />
-                  <span className="text-sm font-medium text-slate-200 truncate">{t.title}</span>
-                </div>
+        <div className="rounded-2xl bg-[#12131a] border border-surface-border overflow-hidden shadow-surface-card">
+          {projectTasks.length === 0 ? (
+            <EmptyState
+              icon={ListTodo}
+              title="No tasks in this project"
+              description="Get started by creating the first engineering task for this project."
+              actionLabel="Add Task"
+              onAction={() => openCreateTask({ projectId: currentProject.id })}
+            />
+          ) : (
+            <div className="divide-y divide-surface-border/60">
+              {projectTasks.map((t) => (
+                <div
+                  key={t.id}
+                  onClick={() => openEditTask(t.id)}
+                  className="p-4 flex items-center justify-between gap-4 hover:bg-surface-200/50 cursor-pointer transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <StatusBadge status={t.status} />
+                    <span className="text-sm font-medium text-slate-200 truncate">{t.title}</span>
+                  </div>
 
-                <div className="flex items-center gap-4 shrink-0">
-                  <PriorityBadge priority={t.priority} />
-                  {t.dueDate && (
-                    <span className="text-xs text-slate-400 font-mono hidden sm:inline">
-                      {formatDate(t.dueDate)}
-                    </span>
-                  )}
-                  <Avatar src={t.assignee?.avatarUrl} name={t.assignee?.name || 'User'} size="sm" />
+                  <div className="flex items-center gap-4 shrink-0">
+                    <PriorityBadge priority={t.priority} />
+                    {t.dueDate && (
+                      <span className="text-xs text-slate-400 font-mono hidden sm:inline">
+                        {formatDate(t.dueDate)}
+                      </span>
+                    )}
+                    <Avatar src={t.assignee?.avatarUrl} name={t.assignee?.name || 'User'} size="sm" />
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Layers, ArrowRight, Lock, Mail, User as UserIcon } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { Button } from '../components/ui/Button';
 
 export const Register: React.FC = () => {
   const [name, setName] = useState('');
@@ -85,7 +86,7 @@ export const Register: React.FC = () => {
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as any)}
-                className="w-full px-3 py-2 bg-surface-200 border border-surface-border rounded-xl text-slate-200 text-sm focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2.5 bg-surface-200 border border-surface-border rounded-xl text-slate-200 text-sm focus:outline-none focus:border-brand-500"
               >
                 <option value="DEVELOPER">Developer / Engineer</option>
                 <option value="LEAD">Team Lead / Architect</option>
@@ -112,20 +113,15 @@ export const Register: React.FC = () => {
               </div>
             </div>
 
-            <button
+            <Button
               type="submit"
-              disabled={isLoading}
-              className="w-full mt-2 py-2.5 px-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-medium text-sm shadow-sm transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
+              isLoading={isLoading}
+              className="w-full mt-2"
+              size="lg"
             >
-              {isLoading ? (
-                'Creating account...'
-              ) : (
-                <>
-                  <span>Create Account</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                </>
-              )}
-            </button>
+              <span>Create Account</span>
+              <ArrowRight className="w-4 h-4 ml-1" />
+            </Button>
           </form>
 
           <div className="mt-6 text-center text-xs text-slate-400">

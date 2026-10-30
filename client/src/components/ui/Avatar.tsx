@@ -55,3 +55,4 @@ export const Avatar: React.FC<AvatarProps> = ({ src, name = 'User', size = 'md',
     </div>
   );
 };
+

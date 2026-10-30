@@ -9,3 +9,4 @@ router.use(authenticate);
 router.get('/', listUsers);
 
 export default router;
+

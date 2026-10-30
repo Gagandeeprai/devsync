@@ -5,6 +5,7 @@ import { useTaskStore } from '../../store/taskStore';
 import { TaskStatus, TaskPriority, User } from '../../types';
 import { PriorityBadge, StatusBadge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
+import { Button } from '../ui/Button';
 import { api } from '../../api/client';
 import { formatDate } from '../../lib/utils';
 
@@ -23,6 +24,16 @@ export const TaskDetailModal: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && editingTaskId) {
+        closeEditTask();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editingTaskId, closeEditTask]);
 
   useEffect(() => {
     if (task) {
@@ -195,25 +206,26 @@ export const TaskDetailModal: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between pt-4 border-t border-surface-border mt-6">
-            <span className="text-[11px] text-slate-500">
+            <span className="text-[11px] text-slate-500 font-mono">
               Created {formatDate(task.createdAt)}
             </span>
 
             <div className="flex items-center gap-2">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={closeEditTask}
-                className="px-4 py-2 text-xs font-medium text-slate-300 hover:text-white bg-surface-100 hover:bg-surface-50 border border-surface-border rounded-xl transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                disabled={isSaving}
-                className="px-4 py-2 text-xs font-medium text-white bg-brand-600 hover:bg-brand-500 disabled:opacity-50 rounded-xl shadow-sm transition-all"
+                size="sm"
+                isLoading={isSaving}
               >
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </button>
+                Save Changes
+              </Button>
             </div>
           </div>
         </form>

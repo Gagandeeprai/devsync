@@ -13,6 +13,7 @@ import { useAuthStore } from '../store/authStore';
 import { useUiStore } from '../store/uiStore';
 import { api } from '../api/client';
 import { Avatar } from '../components/ui/Avatar';
+import { Button } from '../components/ui/Button';
 
 export const Settings: React.FC = () => {
   const { user, updateUser, login } = useAuthStore();
@@ -57,7 +58,7 @@ export const Settings: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Profile Card */}
-      <div className="p-6 rounded-2xl bg-[#12131a] border border-surface-border">
+      <div className="p-6 rounded-2xl bg-[#12131a] border border-surface-border shadow-surface-card">
         <div className="flex items-center gap-2.5 pb-4 border-b border-surface-border">
           <User className="w-5 h-5 text-brand-400" />
           <h3 className="text-base font-semibold text-slate-100">User Profile</h3>
@@ -85,7 +86,7 @@ export const Settings: React.FC = () => {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-surface-200 border border-surface-border rounded-xl text-slate-100 text-sm focus:outline-none focus:border-brand-500"
+                className="w-full px-3.5 py-2.5 bg-surface-200 border border-surface-border rounded-xl text-slate-100 text-sm focus:outline-none focus:border-brand-500 transition-all"
               />
             </div>
 
@@ -104,31 +105,31 @@ export const Settings: React.FC = () => {
 
           <div>
             <label className="block text-xs font-medium text-slate-300 mb-1.5">
-              Avatar URL (Image link or DiceBear seed)
+              Avatar URL (Image link or avatar seed)
             </label>
             <input
               type="url"
               value={avatarUrl}
               onChange={(e) => setAvatarUrl(e.target.value)}
               placeholder="https://images.unsplash.com/... or leave empty"
-              className="w-full px-3.5 py-2.5 bg-surface-200 border border-surface-border rounded-xl text-slate-100 text-sm focus:outline-none focus:border-brand-500 font-mono text-xs"
+              className="w-full px-3.5 py-2.5 bg-surface-200 border border-surface-border rounded-xl text-slate-100 text-sm focus:outline-none focus:border-brand-500 font-mono text-xs transition-all"
             />
           </div>
 
           <div className="flex justify-end pt-4 border-t border-surface-border">
-            <button
+            <Button
               type="submit"
-              disabled={isSaving}
-              className="px-4 py-2 text-xs font-medium text-white bg-brand-600 hover:bg-brand-500 disabled:opacity-50 rounded-xl transition-all"
+              size="sm"
+              isLoading={isSaving}
             >
-              {isSaving ? 'Saving...' : 'Update Profile'}
-            </button>
+              Update Profile
+            </Button>
           </div>
         </form>
       </div>
 
       {/* Switch Demo User (For testing different collaboration roles) */}
-      <div className="p-6 rounded-2xl bg-[#12131a] border border-surface-border">
+      <div className="p-6 rounded-2xl bg-[#12131a] border border-surface-border shadow-surface-card">
         <div className="flex items-center gap-2.5 pb-4 border-b border-surface-border">
           <Users className="w-5 h-5 text-indigo-400" />
           <h3 className="text-base font-semibold text-slate-100">Switch Team Member</h3>
@@ -150,9 +151,9 @@ export const Settings: React.FC = () => {
                 type="button"
                 onClick={() => handleSwitchAccount(u.email)}
                 disabled={isCurrent}
-                className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                className={`p-3.5 rounded-xl border text-left transition-all duration-200 flex flex-col justify-between ${
                   isCurrent
-                    ? 'bg-brand-500/10 border-brand-500/40 cursor-default'
+                    ? 'bg-brand-500/10 border-brand-500/40 cursor-default ring-1 ring-brand-500/30'
                     : 'bg-surface-200/60 border-surface-border hover:bg-surface-200 hover:border-slate-600'
                 }`}
               >
@@ -174,7 +175,7 @@ export const Settings: React.FC = () => {
       </div>
 
       {/* System Infrastructure Card */}
-      <div className="p-6 rounded-2xl bg-[#12131a] border border-surface-border">
+      <div className="p-6 rounded-2xl bg-[#12131a] border border-surface-border shadow-surface-card">
         <div className="flex items-center gap-2.5 pb-4 border-b border-surface-border">
           <Server className="w-5 h-5 text-emerald-400" />
           <h3 className="text-base font-semibold text-slate-100">System Architecture & Health</h3>
