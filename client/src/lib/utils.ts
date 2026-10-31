@@ -16,6 +16,20 @@ export function formatDate(dateString?: string | null): string {
   }
 }
 
+export function formatDueDate(dateString?: string | null): string {
+  if (!dateString) return '';
+  try {
+    const d = new Date(dateString);
+    const now = new Date();
+    if (d.getFullYear() === now.getFullYear()) {
+      return format(d, 'MMM d');
+    }
+    return format(d, 'MMM d, yyyy');
+  } catch {
+    return '';
+  }
+}
+
 export function formatTimeAgo(dateString: string): string {
   try {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true });
@@ -39,31 +53,31 @@ export const PRIORITY_CONFIG: Record<
 > = {
   LOW: {
     label: 'Low',
-    bg: 'bg-slate-800/60',
-    text: 'text-slate-300',
-    border: 'border-slate-700/60',
-    dot: 'bg-slate-400',
+    bg: 'bg-zinc-800/60',
+    text: 'text-zinc-400',
+    border: 'border-zinc-700/60',
+    dot: 'bg-zinc-400',
   },
   MEDIUM: {
     label: 'Medium',
-    bg: 'bg-blue-950/40',
-    text: 'text-blue-300',
-    border: 'border-blue-800/40',
+    bg: 'bg-blue-500/10',
+    text: 'text-blue-400',
+    border: 'border-blue-500/20',
     dot: 'bg-blue-400',
   },
   HIGH: {
     label: 'High',
-    bg: 'bg-amber-950/40',
-    text: 'text-amber-300',
-    border: 'border-amber-800/40',
+    bg: 'bg-amber-500/10',
+    text: 'text-amber-400',
+    border: 'border-amber-500/20',
     dot: 'bg-amber-400',
   },
   URGENT: {
     label: 'Urgent',
-    bg: 'bg-rose-950/40',
-    text: 'text-rose-300',
-    border: 'border-rose-800/40',
-    dot: 'bg-rose-500 animate-pulse',
+    bg: 'bg-rose-500/10',
+    text: 'text-rose-400',
+    border: 'border-rose-500/25',
+    dot: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse',
   },
 };
 

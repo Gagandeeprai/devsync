@@ -20,7 +20,7 @@ import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
-import { formatDate, isOverdue } from '../lib/utils';
+import { formatDate, formatDueDate, isOverdue } from '../lib/utils';
 import { TaskStatus, TaskPriority } from '../types';
 
 export const Tasks: React.FC = () => {
@@ -222,12 +222,13 @@ export const Tasks: React.FC = () => {
 
                     {t.dueDate && (
                       <span
-                        className={`text-xs font-mono hidden md:flex items-center gap-1 ${
+                        className={`text-xs font-mono hidden md:flex items-center gap-1 whitespace-nowrap shrink-0 ${
                           overdue ? 'text-rose-400 font-semibold' : 'text-slate-400'
                         }`}
+                        title={`Due: ${formatDate(t.dueDate)}`}
                       >
-                        <Calendar className="w-3 h-3" />
-                        {formatDate(t.dueDate)}
+                        <Calendar className="w-3.5 h-3.5" />
+                        {formatDueDate(t.dueDate)}
                       </span>
                     )}
 

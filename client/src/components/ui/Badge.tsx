@@ -4,22 +4,24 @@ import { TaskPriority, TaskStatus, ProjectStatus } from '../../types';
 
 interface PriorityBadgeProps {
   priority: TaskPriority;
+  size?: 'sm' | 'md';
   className?: string;
 }
 
-export const PriorityBadge: React.FC<PriorityBadgeProps> = ({ priority, className }) => {
+export const PriorityBadge: React.FC<PriorityBadgeProps> = ({ priority, size = 'md', className }) => {
   const conf = PRIORITY_CONFIG[priority] || PRIORITY_CONFIG.MEDIUM;
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border',
+        'inline-flex items-center font-medium border transition-colors shrink-0',
+        size === 'sm' ? 'gap-1 px-1.5 py-0.5 rounded-md text-[10px]' : 'gap-1.5 px-2 py-0.5 rounded-full text-xs',
         conf.bg,
         conf.text,
         conf.border,
         className
       )}
     >
-      <span className={cn('w-1.5 h-1.5 rounded-full', conf.dot)} />
+      <span className={cn('rounded-full shrink-0', size === 'sm' ? 'w-1 h-1' : 'w-1.5 h-1.5', conf.dot)} />
       {conf.label}
     </span>
   );

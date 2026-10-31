@@ -6,7 +6,7 @@ export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
     <div
       ref={ref}
       className={cn(
-        'rounded-2xl border border-surface-border bg-[#12131a] text-slate-100 shadow-surface-card transition-all duration-200',
+        'rounded-2xl border border-white/[0.08] bg-[#0e0f16]/95 text-slate-100 shadow-surface-card transition-all duration-200',
         className
       )}
       {...props}
@@ -17,7 +17,7 @@ Card.displayName = 'Card';
 
 export const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('flex flex-col space-y-1.5 p-5 sm:p-6 border-b border-surface-border/60', className)} {...props} />
+    <div ref={ref} className={cn('flex flex-col space-y-1.5 p-5 sm:p-6 border-b border-white/[0.06]', className)} {...props} />
   )
 );
 CardHeader.displayName = 'CardHeader';
@@ -45,7 +45,7 @@ CardContent.displayName = 'CardContent';
 
 export const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('flex items-center p-5 sm:p-6 pt-0 border-t border-surface-border/60 mt-4', className)} {...props} />
+    <div ref={ref} className={cn('flex items-center p-5 sm:p-6 pt-0 border-t border-white/[0.06] mt-4', className)} {...props} />
   )
 );
 CardFooter.displayName = 'CardFooter';

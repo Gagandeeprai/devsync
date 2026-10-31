@@ -29,7 +29,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   const content = (
     <div
       className={cn(
-        'p-5 rounded-2xl bg-[#12131a] border border-surface-border hover:border-surface-borderHover transition-all duration-200 shadow-sm hover:shadow-md flex flex-col justify-between group h-full relative overflow-hidden',
+        'p-5 rounded-2xl bg-[#0e0f16]/95 border border-white/[0.08] hover:border-white/[0.15] transition-all duration-200 shadow-sm hover:shadow-md flex flex-col justify-between group h-full relative overflow-hidden',
         to && 'cursor-pointer',
         className
       )}
