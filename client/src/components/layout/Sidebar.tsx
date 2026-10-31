@@ -66,26 +66,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Quick Action Shortcuts */}
-        <div className="p-3 border-b border-white/[0.06] flex items-center gap-2">
+        <div className="p-3 border-b border-white/[0.06] grid grid-cols-2 gap-2">
           <button
             onClick={() => {
               openCreateTask();
               onClose();
             }}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium shadow-sm hover:shadow-glow-brand transition-all"
+            className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium shadow-sm hover:shadow-glow-brand transition-all"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>New Task</span>
+            <span>+ Task</span>
           </button>
           <button
             onClick={() => {
               openCreateProject();
               onClose();
             }}
-            title="Create Project"
-            className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 hover:text-white border border-white/[0.08] transition-colors"
+            title="Create Project with GitHub Provisioning"
+            className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-zinc-200 hover:text-white border border-white/[0.08] text-xs font-medium transition-all"
           >
-            <FolderPlus className="w-4 h-4" />
+            <FolderPlus className="w-3.5 h-3.5 text-brand-400" />
+            <span>+ Project</span>
           </button>
         </div>
 

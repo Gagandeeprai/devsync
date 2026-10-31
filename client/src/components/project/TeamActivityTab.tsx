@@ -376,3 +376,4 @@ export const TeamActivityTab: React.FC<TeamActivityTabProps> = ({ projectId }) =
     </div>
   );
 };
+

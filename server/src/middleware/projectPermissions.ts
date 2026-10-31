@@ -124,3 +124,4 @@ export function requireProjectPermission(capability: ProjectCapability) {
     }
   };
 }
+

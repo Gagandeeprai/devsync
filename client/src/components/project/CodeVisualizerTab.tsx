@@ -936,3 +936,4 @@ export const CodeVisualizerTab: React.FC<CodeVisualizerTabProps> = ({
     </div>
   );
 };
+
