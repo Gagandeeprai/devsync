@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { Prisma } from '@prisma/client';
+import logger from '../utils/logger';
 
 export const errorHandler = (
   err: any,
@@ -8,8 +9,8 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ): void => {
-  // Always log errors in dev/testing
-  console.error(`[Error] ${req.method} ${req.originalUrl}:`, err.message || err);
+  // Structured error logging
+  logger.error(`${req.method} ${req.originalUrl} failed`, err);
 
   // 1. Zod Schema Validation Errors
   if (err instanceof ZodError) {

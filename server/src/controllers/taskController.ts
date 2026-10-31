@@ -4,6 +4,7 @@ import prisma from '../config/db';
 import { AuthenticatedRequest } from '../types';
 import { TaskStatus, TaskPriority } from '@prisma/client';
 import { getUserProjectRole, ROLE_CAPABILITIES } from '../middleware/projectPermissions';
+import logger from '../utils/logger';
 
 const taskCreateSchema = z.object({
   title: z.string().min(2, 'Title must be at least 2 characters').max(150, 'Title must not exceed 150 characters'),
@@ -239,6 +240,11 @@ export const createTask = async (req: AuthenticatedRequest, res: Response, next:
       },
     });
 
+    logger.task(`Task created: "${task.title}" (id: ${task.id}, priority: ${task.priority})`);
+    if (task.assignee) {
+      logger.task(`Task assigned: "${task.title}" to ${task.assignee.name || task.assignee.email}`);
+    }
+
     res.status(201).json({
       success: true,
       message: 'Task created successfully',
@@ -316,6 +322,18 @@ export const updateTask = async (req: AuthenticatedRequest, res: Response, next:
           taskId: updated.id,
         },
       });
+
+      logger.task(`Task status changed: "${updated.title}" [${existing.status} -> ${validated.status}]`);
+    }
+
+    if (validated.assigneeId !== undefined && validated.assigneeId !== existing.assigneeId) {
+      if (updated.assignee) {
+        logger.task(`Task reassigned: "${updated.title}" to ${updated.assignee.name || updated.assignee.email}`);
+      } else {
+        logger.task(`Task unassigned: "${updated.title}"`);
+      }
+    } else {
+      logger.task(`Task updated: "${updated.title}" (id: ${updated.id})`);
     }
 
     res.json({
@@ -363,6 +381,8 @@ export const updateTaskStatus = async (req: AuthenticatedRequest, res: Response,
           taskId: updated.id,
         },
       });
+
+      logger.task(`Task status changed: "${updated.title}" [${existing.status} -> ${status}]`);
     }
 
     res.json({
@@ -400,6 +420,8 @@ export const deleteTask = async (req: AuthenticatedRequest, res: Response, next:
         projectId: existing.projectId,
       },
     });
+
+    logger.task(`Task deleted: "${existing.title}" (id: ${id})`);
 
     res.json({
       success: true,
@@ -448,6 +470,8 @@ export const submitForReview = async (req: AuthenticatedRequest, res: Response, 
         taskId: task.id,
       },
     });
+
+    logger.task(`Task submitted for review: "${task.title}" (id: ${task.id})`);
 
     res.json({
       success: true,
@@ -508,6 +532,8 @@ export const requestChanges = async (req: AuthenticatedRequest, res: Response, n
       },
     });
 
+    logger.task(`Changes requested on task: "${task.title}" - ${notes.trim()}`);
+
     res.json({
       success: true,
       message: 'Changes requested successfully',
@@ -561,6 +587,8 @@ export const approveTask = async (req: AuthenticatedRequest, res: Response, next
         taskId: task.id,
       },
     });
+
+    logger.task(`Task approved: "${task.title}" (id: ${task.id}) marked DONE`);
 
     res.json({
       success: true,

@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import prisma from '../config/db';
 import { AuthenticatedRequest, JwtPayload } from '../types';
+import logger from '../utils/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'devsync-default-super-secret-key';
 const JWT_EXPIRES_IN = '7d';
@@ -76,6 +77,8 @@ export const register = async (req: Request, res: Response, next: NextFunction):
       },
     });
 
+    logger.auth(`User registered: ${user.email} (id: ${user.id}, role: ${user.role})`);
+
     const token = generateToken({
       userId: user.id,
       email: user.email,
@@ -102,6 +105,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     });
 
     if (!user) {
+      logger.auth(`Failed login attempt: ${validated.email} - user not found`);
       res.status(401).json({
         success: false,
         message: 'Invalid email or password',
@@ -110,6 +114,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     }
 
     if (!user.passwordHash) {
+      logger.auth(`Failed login attempt: ${validated.email} - account requires Google Sign-In`);
       res.status(400).json({
         success: false,
         message: 'This account was created via Google Sign-In. Please sign in using Google.',
@@ -119,12 +124,15 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 
     const isMatch = await bcrypt.compare(validated.password, user.passwordHash);
     if (!isMatch) {
+      logger.auth(`Failed login attempt: ${validated.email} - invalid credentials`);
       res.status(401).json({
         success: false,
         message: 'Invalid email or password',
       });
       return;
     }
+
+    logger.auth(`User logged in: ${user.email} (id: ${user.id}, role: ${user.role})`);
 
     const token = generateToken({
       userId: user.id,
@@ -259,11 +267,13 @@ export const handleGoogleCallback = async (req: Request, res: Response): Promise
     const { code, state, error } = req.query;
 
     if (error) {
+      logger.auth(`Google OAuth failed with error from provider: ${error}`);
       res.redirect(`${CLIENT_URL}/login?auth_error=${encodeURIComponent(String(error))}`);
       return;
     }
 
     if (!code || typeof code !== 'string') {
+      logger.auth('Google OAuth callback received without code parameter');
       res.redirect(`${CLIENT_URL}/login?auth_error=missing_google_code`);
       return;
     }
@@ -347,6 +357,8 @@ export const handleGoogleCallback = async (req: Request, res: Response): Promise
       role: user.role,
     });
 
+    logger.auth(`Google OAuth login successful: ${user.email} (id: ${user.id})`);
+
     const safeUser = {
       id: user.id,
       name: user.name,
@@ -409,6 +421,8 @@ export const googleTokenAuth = async (req: Request, res: Response, next: NextFun
       role: user.role,
     });
 
+    logger.auth(`Google OAuth login successful: ${user.email} (id: ${user.id})`);
+
     res.json({
       success: true,
       token,
@@ -431,5 +445,14 @@ export const getGoogleClientId = async (req: Request, res: Response): Promise<vo
     clientId: process.env.GOOGLE_CLIENT_ID || null,
   });
 };
+
+export const logout = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  logger.auth(`User logged out: ${req.user?.email || req.user?.userId || 'User'}`);
+  res.json({
+    success: true,
+    message: 'Logged out successfully',
+  });
+};
+
 
 

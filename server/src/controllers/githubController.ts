@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import prisma from '../config/db';
 import { AuthenticatedRequest } from '../types';
 import { encryptToken, decryptToken } from '../utils/crypto';
+import logger from '../utils/logger';
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID || '';
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET || '';
@@ -157,6 +158,8 @@ export const handleCallback = async (req: Request, res: Response): Promise<void>
       },
     });
 
+    logger.auth(`GitHub account connected: @${ghUser.login} for user id ${userId}`);
+
     res.redirect(`${CLIENT_URL}/settings?github=connected&username=${encodeURIComponent(ghUser.login)}`);
   } catch (error: any) {
     res.redirect(`${CLIENT_URL}/settings?github_error=${encodeURIComponent(error.message)}`);
@@ -232,6 +235,8 @@ export const disconnect = async (req: AuthenticatedRequest, res: Response): Prom
         userId,
       },
     });
+
+    logger.auth(`GitHub account disconnected for user id ${userId}`);
 
     res.json({ success: true, message: 'GitHub account disconnected' });
   } catch (error: any) {
@@ -342,6 +347,8 @@ export const linkRepository = async (req: AuthenticatedRequest, res: Response): 
       },
     });
 
+    logger.github(`Repository connected: ${repositoryOwner}/${repositoryName} (project: "${project.name}", id: ${projectId})`);
+
     res.json({ success: true, repository: repo });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -365,6 +372,8 @@ export const unlinkRepository = async (req: AuthenticatedRequest, res: Response)
         projectId,
       },
     });
+
+    logger.github(`Repository disconnected from project id: ${projectId}`);
 
     res.json({ success: true, message: 'Repository unlinked successfully' });
   } catch (error: any) {
@@ -618,6 +627,8 @@ export const linkPullRequestToTask = async (req: AuthenticatedRequest, res: Resp
       },
     });
 
+    logger.github(`Pull request #${pullRequestNumber} linked to task: "${task.title}" (taskId: ${taskId})`);
+
     res.json({ success: true, pullRequest: linkedPr });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -671,10 +682,13 @@ export const handleWebhook = async (req: Request, res: Response): Promise<void> 
       const expectedSignature = `sha256=${hmac.update(rawBody).digest('hex')}`;
 
       if (signature.length !== expectedSignature.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+        logger.github('Webhook verification failed: Invalid HMAC signature');
         res.status(401).json({ success: false, message: 'Invalid webhook signature' });
         return;
       }
     }
+
+    logger.github(`Webhook received and verified: event "${event || 'ping'}"`);
 
     // Process pull_request events
     if (event === 'pull_request') {
@@ -688,6 +702,10 @@ export const handleWebhook = async (req: Request, res: Response): Promise<void> 
       const prNumber = pull_request.number;
       const isMerged = action === 'closed' && pull_request.merged === true;
       const currentState = isMerged ? 'merged' : pull_request.state;
+
+      if (isMerged) {
+        logger.github(`Pull request #${prNumber} merged into ${pull_request.base?.ref || 'main'}`);
+      }
 
       // Update any TaskPullRequest records linked to this PR number
       const linkedTaskPrs = await prisma.taskPullRequest.findMany({
@@ -1256,6 +1274,8 @@ export const createRepository = async (req: AuthenticatedRequest, res: Response)
         projectId,
       },
     });
+
+    logger.github(`Repository created on GitHub: ${newRepo.owner.login}/${newRepo.name} (visibility: ${newRepo.private ? 'private' : 'public'})`);
 
     res.status(201).json({
       success: true,

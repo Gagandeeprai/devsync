@@ -4,6 +4,7 @@ import prisma from '../config/db';
 import { AuthenticatedRequest } from '../types';
 import { ProjectStatus, ProjectRole, TaskStatus } from '@prisma/client';
 import { getUserProjectRole } from '../middleware/projectPermissions';
+import logger from '../utils/logger';
 
 const projectSchema = z.object({
   name: z.string().min(2, 'Project name must be at least 2 characters').max(100, 'Project name cannot exceed 100 characters'),
@@ -172,6 +173,8 @@ export const createProject = async (req: AuthenticatedRequest, res: Response, ne
       },
     });
 
+    logger.project(`Project created: "${project.name}" (id: ${project.id})`);
+
     res.status(201).json({
       success: true,
       message: 'Project created successfully',
@@ -239,6 +242,8 @@ export const updateProject = async (req: AuthenticatedRequest, res: Response, ne
       },
     });
 
+    logger.project(`Project updated: "${updated.name}" (id: ${updated.id})`);
+
     res.json({
       success: true,
       message: 'Project updated successfully',
@@ -279,6 +284,8 @@ export const deleteProject = async (req: AuthenticatedRequest, res: Response, ne
         userId,
       },
     });
+
+    logger.project(`Project deleted: "${existing.name}" (id: ${id})`);
 
     res.json({
       success: true,
@@ -410,6 +417,8 @@ export const addProjectMember = async (req: AuthenticatedRequest, res: Response,
       },
     });
 
+    logger.project(`Team member added: ${user.email} as ${projectRole} to project id: ${id}`);
+
     res.status(201).json({
       success: true,
       message: 'Member added successfully',
@@ -457,6 +466,8 @@ export const updateProjectMemberRole = async (req: AuthenticatedRequest, res: Re
       },
     });
 
+    logger.project(`Project role changed: ${updated.user.email} -> ${role} in project id: ${id}`);
+
     res.json({
       success: true,
       message: 'Member role updated successfully',
@@ -484,6 +495,8 @@ export const removeProjectMember = async (req: AuthenticatedRequest, res: Respon
     await prisma.projectMember.delete({
       where: { projectId_userId: { projectId: id, userId } },
     });
+
+    logger.project(`Team member removed: user id ${userId} from project id: ${id}`);
 
     res.json({
       success: true,

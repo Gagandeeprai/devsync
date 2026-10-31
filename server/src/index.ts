@@ -9,6 +9,7 @@ import userRoutes from './routes/userRoutes';
 import githubRoutes from './routes/githubRoutes';
 import { errorHandler } from './middleware/errorHandler';
 import prisma from './config/db';
+import logger from './utils/logger';
 
 dotenv.config();
 
@@ -34,13 +35,13 @@ app.use(
   })
 );
 
-// Request logging in development
-if (process.env.NODE_ENV !== 'test') {
+// Optional HTTP access logging (enabled when LOG_HTTP=true to avoid duplicate noise)
+if (process.env.LOG_HTTP === 'true') {
   app.use((req, res, next) => {
     const start = Date.now();
     res.on('finish', () => {
       const duration = Date.now() - start;
-      console.log(`[${req.method}] ${req.originalUrl} - ${res.statusCode} (${duration}ms)`);
+      logger.system(`[${req.method}] ${req.originalUrl} - ${res.statusCode} (${duration}ms)`);
     });
     next();
   });
@@ -75,15 +76,15 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 const server = app.listen(PORT, () => {
-  console.log(`🚀 DevSync Server running on http://localhost:${PORT}`);
+  logger.system(`🚀 DevSync Server running on http://localhost:${PORT}`);
 });
 
 // Handle graceful shutdown
 const shutdown = async () => {
-  console.log('Shutting down server...');
+  logger.system('Shutting down server...');
   server.close(async () => {
     await prisma.$disconnect();
-    console.log('Database disconnected. Process terminated.');
+    logger.system('Database disconnected. Process terminated.');
     process.exit(0);
   });
 };
