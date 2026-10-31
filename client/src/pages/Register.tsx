@@ -3,8 +3,28 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Layers, ArrowRight, Lock, Mail, User as UserIcon, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/ui/Button';
-
 import { UserRole } from '../types';
+
+const GoogleIcon = () => (
+  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+    <path
+      fill="#4285F4"
+      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.15z"
+    />
+    <path
+      fill="#34A853"
+      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.15C3.26 21.41 7.34 24 12 24z"
+    />
+    <path
+      fill="#FBBC05"
+      d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.24C.45 8.15 0 9.98 0 12s.45 3.85 1.24 5.42l4.04-3.15z"
+    />
+    <path
+      fill="#EA4335"
+      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.59 1.24 6.58l4.04 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+    />
+  </svg>
+);
 
 export const Register: React.FC = () => {
   const [name, setName] = useState('');
@@ -25,6 +45,10 @@ export const Register: React.FC = () => {
     }
   };
 
+  const handleGoogleSignUp = () => {
+    window.location.href = '/api/auth/google';
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative overflow-hidden">
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-600/15 rounded-full blur-3xl pointer-events-none" />
@@ -43,6 +67,23 @@ export const Register: React.FC = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10 px-4">
         <div className="bg-[#12131a] border border-surface-border rounded-2xl shadow-surface-card p-6 sm:p-8 backdrop-blur-xl">
+          {/* Google Sign-Up Button */}
+          <button
+            type="button"
+            onClick={handleGoogleSignUp}
+            className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.09] text-zinc-100 border border-white/[0.1] text-xs font-semibold shadow-sm transition-all hover:border-white/[0.2] mb-5 group"
+          >
+            <GoogleIcon />
+            <span>Sign up with Google</span>
+          </button>
+
+          <div className="relative flex items-center justify-center mb-5">
+            <div className="border-t border-surface-border w-full" />
+            <span className="bg-[#12131a] px-2.5 text-[11px] text-slate-500 font-medium uppercase tracking-wider absolute">
+              or register with email
+            </span>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1.5">

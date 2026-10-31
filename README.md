@@ -142,17 +142,31 @@ erDiagram
     User ||--o{ Task : "assigned_to"
     User ||--o{ Task : "creates"
     User ||--o{ Activity : "performs"
+    User ||--o| GitHubConnection : "authenticates"
+    Project ||--o| ProjectRepository : "links"
     Project ||--o{ Task : "contains"
     Project ||--o{ Activity : "tracks"
+    Task ||--o{ TaskPullRequest : "associates"
     Task ||--o{ Activity : "triggers"
 
     User {
         string id PK
         string email UK
-        string passwordHash
+        string passwordHash "Optional"
+        string googleId UK "Optional"
         string name
         string avatarUrl
-        UserRole role
+        UserRole role "ADMIN | LEAD | DEVELOPER | INTERN | HR"
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    GitHubConnection {
+        string id PK
+        string userId FK
+        string githubUserId
+        string githubUsername
+        string encryptedAccessToken "AES-256-GCM"
         datetime createdAt
         datetime updatedAt
     }
@@ -168,6 +182,17 @@ erDiagram
         datetime updatedAt
     }
 
+    ProjectRepository {
+        string id PK
+        string projectId FK
+        string repositoryId
+        string repositoryName
+        string repositoryOwner
+        string repositoryUrl
+        datetime createdAt
+        datetime updatedAt
+    }
+
     Task {
         string id PK
         string title
@@ -179,6 +204,18 @@ erDiagram
         string projectId FK
         string assigneeId FK
         string creatorId FK
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    TaskPullRequest {
+        string id PK
+        string taskId FK
+        string repositoryId
+        int pullRequestNumber
+        string pullRequestTitle
+        string pullRequestUrl
+        string pullRequestState "open | merged | closed"
         datetime createdAt
         datetime updatedAt
     }
@@ -264,7 +301,25 @@ stateDiagram-v2
     DONE --> [*]
 ```
 
-### 4. Dashboard & Team Endpoints
+### 4. GitHub & Google Integration Endpoints
+- `GET /api/auth/google` — Redirect to Google OAuth 2.0 consent screen.
+- `GET /api/auth/google/callback` — Google OAuth callback and JWT token issuance.
+- `POST /api/auth/google/token` — Direct Google ID token verification.
+- `GET /api/github/auth` — Initiate GitHub OAuth handshake with CSRF state.
+- `GET /api/github/callback` — GitHub OAuth callback, token exchange, and AES-256 encryption.
+- `GET /api/github/connection` — Query connection status and username (tokens never exposed).
+- `DELETE /api/github/disconnect` — Unlink GitHub account.
+- `GET /api/github/repositories` — List accessible repositories.
+- `POST /api/github/projects/:id/repository` — Link GitHub repository to a project.
+- `DELETE /api/github/projects/:id/repository` — Unlink repository from a project.
+- `GET /api/github/projects/:id/commits` — Stream recent commits with SHAs and authors.
+- `GET /api/github/projects/:id/pull-requests` — List repository PRs with status filters.
+- `POST /api/github/tasks/:id/pull-requests` — Link pull request to a DevSync task.
+- `GET /api/github/tasks/:id/pull-requests` — List pull requests linked to a task.
+- `DELETE /api/github/tasks/:id/pull-requests/:prId` — Unlink pull request from task.
+- `POST /api/github/webhook` — HMAC SHA-256 verified webhook (auto-transitions merged tasks to `DONE`).
+
+### 5. Dashboard & Team Endpoints
 - `GET /api/dashboard/stats` — Real-time PostgreSQL aggregation of total projects, tasks, completed/pending tasks, priority counts, status distribution, and recent audit logs.
 - `GET /api/users` — List team members for task assignment.
 - `GET /api/health` — Service healthcheck.

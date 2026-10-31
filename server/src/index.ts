@@ -6,6 +6,7 @@ import projectRoutes from './routes/projectRoutes';
 import taskRoutes from './routes/taskRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import userRoutes from './routes/userRoutes';
+import githubRoutes from './routes/githubRoutes';
 import { errorHandler } from './middleware/errorHandler';
 import prisma from './config/db';
 
@@ -25,7 +26,13 @@ app.use(
   })
 );
 
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf.toString('utf8');
+    },
+  })
+);
 
 // Request logging in development
 if (process.env.NODE_ENV !== 'test') {
@@ -54,6 +61,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/github', githubRoutes);
 
 // 404 handler
 app.use((req, res) => {
