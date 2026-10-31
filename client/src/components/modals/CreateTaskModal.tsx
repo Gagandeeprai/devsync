@@ -18,8 +18,10 @@ export const CreateTaskModal: React.FC = () => {
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
   const [projectId, setProjectId] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
+  const [reviewerId, setReviewerId] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [users, setUsers] = useState<User[]>([]);
+  const [projectMembers, setProjectMembers] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -56,6 +58,18 @@ export const CreateTaskModal: React.FC = () => {
     }
   }, [projects, defaultProjectId, projectId]);
 
+  useEffect(() => {
+    if (projectId) {
+      api.get<{ success: boolean; members: any[] }>(`/projects/${projectId}/members`)
+        .then((res) => setProjectMembers(res.members || []))
+        .catch(() => setProjectMembers([]));
+    }
+  }, [projectId]);
+
+  const eligibleReviewers = projectMembers.filter(
+    (m) => m.role === 'SENIOR' || m.role === 'PROJECT_LEAD' || m.role === 'PROJECT_ADMIN'
+  );
+
   if (!isCreateTaskOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,6 +84,7 @@ export const CreateTaskModal: React.FC = () => {
       priority,
       projectId,
       assigneeId: assigneeId || undefined,
+      reviewerId: reviewerId || undefined,
       dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
     });
 
@@ -79,6 +94,7 @@ export const CreateTaskModal: React.FC = () => {
       setDescription('');
       setDueDate('');
       setAssigneeId('');
+      setReviewerId('');
       closeCreateTask();
     }
   };
@@ -172,7 +188,8 @@ export const CreateTaskModal: React.FC = () => {
                 <option value="BACKLOG">Backlog</option>
                 <option value="TODO">Todo</option>
                 <option value="IN_PROGRESS">In Progress</option>
-                <option value="REVIEW">Review</option>
+                <option value="REVIEW">In Review</option>
+                <option value="CHANGES_REQUESTED">Changes Requested</option>
                 <option value="DONE">Done</option>
               </select>
             </div>
@@ -215,15 +232,33 @@ export const CreateTaskModal: React.FC = () => {
 
             <div>
               <label className="block text-xs font-medium text-slate-300 mb-1.5">
-                Due Date
+                Senior Reviewer <span className="text-[10px] text-slate-400 font-normal">(Senior/Lead)</span>
               </label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+              <select
+                value={reviewerId}
+                onChange={(e) => setReviewerId(e.target.value)}
                 className="w-full px-3 py-2 bg-surface-200 border border-surface-border rounded-xl text-slate-200 text-sm focus:outline-none focus:border-brand-500"
-              />
+              >
+                <option value="">No Reviewer Assigned</option>
+                {eligibleReviewers.map((m) => (
+                  <option key={m.userId} value={m.userId}>
+                    {m.user.name} ({m.role.replace('_', ' ')})
+                  </option>
+                ))}
+              </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
+              Due Date
+            </label>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full px-3 py-2 bg-surface-200 border border-surface-border rounded-xl text-slate-200 text-sm focus:outline-none focus:border-brand-500"
+            />
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-surface-border mt-6">

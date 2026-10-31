@@ -17,6 +17,9 @@ import {
   AlertCircle,
   RefreshCw,
   Search,
+  Users,
+  Activity as ActivityIcon,
+  RotateCcw,
 } from 'lucide-react';
 import { useProjectStore } from '../store/projectStore';
 import { useTaskStore } from '../store/taskStore';
@@ -29,6 +32,9 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { formatDate, formatTimeAgo, isOverdue } from '../lib/utils';
 import { Task, TaskStatus } from '../types';
 import { api } from '../api/client';
+import { TeamTab } from '../components/project/TeamTab';
+import { TeamActivityTab } from '../components/project/TeamActivityTab';
+import { CodeVisualizerTab } from '../components/project/CodeVisualizerTab';
 
 const GitHubIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
   <svg className={className} fill="currentColor" viewBox="0 0 24 24">
@@ -46,7 +52,7 @@ export const ProjectDetail: React.FC = () => {
   const { updateTaskStatus } = useTaskStore();
   const { openCreateTask, openEditTask, addToast } = useUiStore();
 
-  const [activeTab, setActiveTab] = useState<'KANBAN' | 'LIST' | 'CODE'>('KANBAN');
+  const [activeTab, setActiveTab] = useState<'KANBAN' | 'LIST' | 'TEAM' | 'ACTIVITY' | 'CODE'>('KANBAN');
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [activeDropCol, setActiveDropCol] = useState<TaskStatus | null>(null);
 
@@ -54,8 +60,6 @@ export const ProjectDetail: React.FC = () => {
   const [linkedRepo, setLinkedRepo] = useState<any>(null);
   const [commits, setCommits] = useState<any[]>([]);
   const [pullRequests, setPullRequests] = useState<any[]>([]);
-  const [prFilter, setPrFilter] = useState<'all' | 'open' | 'closed'>('all');
-  const [codeSubTab, setCodeSubTab] = useState<'COMMITS' | 'PRS' | 'WEBHOOK'>('COMMITS');
   const [isCodeLoading, setIsCodeLoading] = useState(false);
   const [accessibleRepos, setAccessibleRepos] = useState<any[]>([]);
   const [selectedRepoToLink, setSelectedRepoToLink] = useState('');
@@ -87,7 +91,7 @@ export const ProjectDetail: React.FC = () => {
       // 2. PRs
       if (commitRes.linked) {
         const prRes = await api.get<{ success: boolean; pullRequests: any[] }>(
-          `/github/projects/${projectId}/pull-requests?state=${prFilter}`
+          `/github/projects/${projectId}/pull-requests?state=all`
         );
         setPullRequests(prRes.pullRequests || []);
       }
@@ -188,7 +192,8 @@ export const ProjectDetail: React.FC = () => {
     { status: 'BACKLOG', label: 'Backlog', color: 'border-slate-700' },
     { status: 'TODO', label: 'Todo', color: 'border-sky-500/40' },
     { status: 'IN_PROGRESS', label: 'In Progress', color: 'border-amber-500/40' },
-    { status: 'REVIEW', label: 'Review', color: 'border-purple-500/40' },
+    { status: 'REVIEW', label: 'In Review', color: 'border-purple-500/40' },
+    { status: 'CHANGES_REQUESTED', label: 'Changes Req.', color: 'border-orange-500/40' },
     { status: 'DONE', label: 'Done', color: 'border-emerald-500/40' },
   ];
 
@@ -203,28 +208,29 @@ export const ProjectDetail: React.FC = () => {
   const handleDragOver = (e: React.DragEvent, status: TaskStatus) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (activeDropCol !== status) {
-      setActiveDropCol(status);
-    }
+    setActiveDropCol(status);
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
+  const handleDragLeave = () => {
+    setActiveDropCol(null);
   };
 
   const handleDrop = async (e: React.DragEvent, targetStatus: TaskStatus) => {
     e.preventDefault();
-    const taskId = e.dataTransfer.getData('text/plain') || draggedTaskId;
     setActiveDropCol(null);
-    setDraggedTaskId(null);
+    const taskId = e.dataTransfer.getData('text/plain');
 
-    if (taskId) {
-      const updatedTasks = projectTasks.map((t) => (t.id === taskId ? { ...t, status: targetStatus } : t));
+    if (taskId && currentProject) {
+      const updatedTasks = projectTasks.map((t) =>
+        t.id === taskId ? { ...t, status: targetStatus } : t
+      );
+
       useProjectStore.setState({
         currentProject: {
           ...currentProject,
           tasks: updatedTasks,
           completedTasks: updatedTasks.filter((t) => t.status === 'DONE').length,
+          pendingTasks: updatedTasks.filter((t) => t.status !== 'DONE').length,
           progress:
             updatedTasks.length > 0
               ? Math.round((updatedTasks.filter((t) => t.status === 'DONE').length / updatedTasks.length) * 100)
@@ -280,6 +286,16 @@ export const ProjectDetail: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {linkedRepo && (
+              <button
+                onClick={handleUnlinkRepository}
+                className="px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-medium transition-colors flex items-center gap-1.5"
+                title="Unlink Repository"
+              >
+                <Unlink className="w-3.5 h-3.5" />
+                <span>Unlink Repo</span>
+              </button>
+            )}
             <Button
               onClick={() => openCreateTask({ projectId: currentProject.id })}
               size="sm"
@@ -294,41 +310,43 @@ export const ProjectDetail: React.FC = () => {
         <div className="mt-6 pt-4 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400">
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-2">
-              <span className="text-slate-500">Lead:</span>
+              <span className="text-slate-500">Owner:</span>
               <div className="flex items-center gap-1.5 font-medium text-slate-200">
                 <Avatar
                   src={currentProject.owner?.avatarUrl}
-                  name={currentProject.owner?.name || 'Owner'}
+                  name={currentProject.owner?.name}
                   size="xs"
                 />
-                <span>{currentProject.owner?.name || 'Unassigned'}</span>
+                <span>{currentProject.owner?.name}</span>
               </div>
             </div>
 
             {currentProject.deadline && (
-              <div className="flex items-center gap-1.5 font-mono">
+              <div className="flex items-center gap-1.5 text-slate-300">
                 <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                <span className={isOverdue(currentProject.deadline) ? 'text-rose-400 font-semibold' : 'text-slate-300'}>
-                  Due {formatDate(currentProject.deadline)}
-                </span>
+                <span>Due {formatDate(currentProject.deadline)}</span>
               </div>
             )}
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-slate-300 font-semibold">
-              {currentProject.completedTasks || 0} / {currentProject.totalTasks || 0} tasks
-            </span>
-            <span className="text-brand-400 font-semibold font-mono">
-              ({currentProject.progress || 0}%)
-            </span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-500">Progress:</span>
+              <span className="font-semibold text-slate-200">{currentProject.progress}%</span>
+            </div>
+            <div className="w-28 h-2 rounded-full bg-surface-200 overflow-hidden border border-white/5">
+              <div
+                className="h-full bg-gradient-to-r from-brand-600 to-accent-cyan rounded-full transition-all duration-500"
+                style={{ width: `${currentProject.progress}%` }}
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Tabs Switcher: Kanban / List / GitHub Activity */}
-      <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
-        <div className="flex items-center gap-1.5 bg-[#0e0f16] p-1 rounded-xl border border-white/[0.08]">
+      {/* Tabs Navigation Bar */}
+      <div className="flex items-center justify-between border-b border-surface-border pb-3">
+        <div className="flex items-center gap-1.5 p-1 bg-[#0c0d13] rounded-xl border border-white/[0.08] text-xs">
           <button
             onClick={() => setActiveTab('KANBAN')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -352,6 +370,28 @@ export const ProjectDetail: React.FC = () => {
             <span>Tasks ({projectTasks.length})</span>
           </button>
           <button
+            onClick={() => setActiveTab('TEAM')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              activeTab === 'TEAM'
+                ? 'bg-brand-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Team & Roles</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('ACTIVITY')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              activeTab === 'ACTIVITY'
+                ? 'bg-brand-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+            }`}
+          >
+            <ActivityIcon className="w-3.5 h-3.5" />
+            <span>Team Activity</span>
+          </button>
+          <button
             onClick={() => setActiveTab('CODE')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               activeTab === 'CODE'
@@ -360,14 +400,14 @@ export const ProjectDetail: React.FC = () => {
             }`}
           >
             <GitHubIcon className="w-3.5 h-3.5" />
-            <span>Code & GitHub {linkedRepo ? '✓' : ''}</span>
+            <span>Code & Repository {linkedRepo ? '✓' : ''}</span>
           </button>
         </div>
       </div>
 
-      {/* Kanban Tab */}
+      {/* 1. Kanban Tab */}
       {activeTab === 'KANBAN' && (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3.5 overflow-x-auto pb-6 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 overflow-x-auto pb-6 items-start">
           {columns.map((col) => {
             const columnTasks = projectTasks.filter((t) => t.status === col.status);
             const isTarget = activeDropCol === col.status;
@@ -393,38 +433,60 @@ export const ProjectDetail: React.FC = () => {
                   </div>
                   <button
                     onClick={() => openCreateTask({ projectId: currentProject.id, status: col.status })}
-                    className="p-1 text-slate-400 hover:text-white hover:bg-white/[0.06] rounded transition-colors"
+                    className="p-1 text-slate-400 hover:text-white rounded hover:bg-white/[0.06] transition-colors"
+                    title={`Add task to ${col.label}`}
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <div className="space-y-2.5 flex-1 overflow-y-auto">
-                  {columnTasks.map((t) => (
-                    <div
-                      key={t.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, t.id)}
-                      onClick={() => openEditTask(t.id)}
-                      className={`p-3 rounded-xl bg-[#11131c] border border-white/[0.08] hover:border-brand-500/50 cursor-grab active:cursor-grabbing transition-all hover:shadow-md select-none group ${
-                        draggedTaskId === t.id ? 'opacity-40 scale-95' : ''
-                      }`}
-                    >
-                      <span className="text-[13px] font-medium text-slate-200 group-hover:text-white leading-snug">
-                        {t.title}
-                      </span>
+                <div className="flex-1 space-y-2.5 overflow-y-auto">
+                  {columnTasks.length === 0 ? (
+                    <div className="h-28 flex items-center justify-center border border-dashed border-white/[0.05] rounded-xl text-slate-600 text-xs">
+                      No tasks
+                    </div>
+                  ) : (
+                    columnTasks.map((t) => (
+                      <div
+                        key={t.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, t.id)}
+                        onClick={() => openEditTask(t.id)}
+                        className="group p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-brand-500/50 hover:bg-white/[0.04] transition-all cursor-grab active:cursor-grabbing shadow-sm hover:shadow-surface-card"
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <PriorityBadge priority={t.priority} size="sm" />
+                          {t.assignee && (
+                            <Avatar
+                              src={t.assignee.avatarUrl}
+                              name={t.assignee.name}
+                              size="xs"
+                            />
+                          )}
+                        </div>
 
-                      <div className="mt-3 flex items-center justify-between pt-2 border-t border-white/[0.06]">
-                        <PriorityBadge priority={t.priority} size="sm" />
-                        <Avatar src={t.assignee?.avatarUrl} name={t.assignee?.name || 'Unassigned'} size="xs" />
+                        <h4 className="text-xs font-medium text-slate-100 group-hover:text-brand-300 transition-colors line-clamp-2">
+                          {t.title}
+                        </h4>
+
+                        {t.description && (
+                          <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">
+                            {t.description}
+                          </p>
+                        )}
+
+                        <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-white/[0.04] text-[10px] text-slate-500">
+                          {t.dueDate ? (
+                            <span className={isOverdue(t.dueDate) && t.status !== 'DONE' ? 'text-rose-400 font-medium' : ''}>
+                              {formatDate(t.dueDate)}
+                            </span>
+                          ) : (
+                            <span>No date</span>
+                          )}
+                          <span className="font-mono">{t.id.substring(0, 6)}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-
-                  {columnTasks.length === 0 && (
-                    <div className="h-28 border border-dashed border-white/[0.08] rounded-xl flex items-center justify-center text-xs text-slate-600">
-                      Drop here
-                    </div>
+                    ))
                   )}
                 </div>
               </div>
@@ -433,50 +495,59 @@ export const ProjectDetail: React.FC = () => {
         </div>
       )}
 
-      {/* List Tab */}
+      {/* 2. Tasks List Tab */}
       {activeTab === 'LIST' && (
-        <div className="rounded-2xl bg-[#0e0f16]/95 border border-white/[0.08] overflow-hidden shadow-surface-card">
-          {projectTasks.length === 0 ? (
-            <EmptyState
-              icon={ListTodo}
-              title="No tasks in this project"
-              description="Get started by creating the first engineering task for this project."
-              actionLabel="Add Task"
-              onAction={() => openCreateTask({ projectId: currentProject.id })}
-            />
-          ) : (
-            <div className="divide-y divide-white/[0.06]">
-              {projectTasks.map((t) => (
+        <div className="rounded-2xl border border-white/[0.08] bg-[#0c0d13] overflow-hidden">
+          <div className="divide-y divide-white/[0.04]">
+            {projectTasks.length === 0 ? (
+              <div className="py-12 text-center text-xs text-slate-500">
+                No tasks created for this project yet.
+              </div>
+            ) : (
+              projectTasks.map((t) => (
                 <div
                   key={t.id}
                   onClick={() => openEditTask(t.id)}
-                  className="p-4 flex items-center justify-between gap-4 hover:bg-white/[0.02] cursor-pointer transition-colors"
+                  className="p-4 hover:bg-white/[0.02] transition-colors flex items-center justify-between gap-4 cursor-pointer text-xs"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <StatusBadge status={t.status} />
-                    <span className="text-sm font-medium text-slate-200 truncate">{t.title}</span>
+                    <span className="font-medium text-slate-200 truncate">{t.title}</span>
                   </div>
-
                   <div className="flex items-center gap-4 shrink-0">
-                    <PriorityBadge priority={t.priority} />
-                    {t.dueDate && (
-                      <span className="text-xs text-slate-400 font-mono hidden sm:inline">
-                        {formatDate(t.dueDate)}
-                      </span>
+                    <PriorityBadge priority={t.priority} size="sm" />
+                    {t.assignee && (
+                      <div className="flex items-center gap-1.5 text-slate-300">
+                        <Avatar src={t.assignee.avatarUrl} name={t.assignee.name} size="xs" />
+                        <span className="text-[11px]">{t.assignee.name}</span>
+                      </div>
                     )}
-                    <Avatar src={t.assignee?.avatarUrl} name={t.assignee?.name || 'User'} size="sm" />
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </div>
       )}
 
-      {/* GitHub Code Tab */}
+      {/* 3. Team & Permissions Tab */}
+      {activeTab === 'TEAM' && <TeamTab projectId={currentProject.id} />}
+
+      {/* 4. Team Activity Tab */}
+      {activeTab === 'ACTIVITY' && <TeamActivityTab projectId={currentProject.id} />}
+
+      {/* 5. Code & Repository Visualizer Tab */}
       {activeTab === 'CODE' && (
-        <div className="space-y-5">
-          {!linkedRepo ? (
+        <div>
+          {linkedRepo ? (
+            <CodeVisualizerTab
+              projectId={currentProject.id}
+              repository={linkedRepo}
+              commits={commits}
+              pullRequests={pullRequests}
+              onRefresh={() => loadGitHubData(currentProject.id)}
+            />
+          ) : (
             <div className="p-8 rounded-2xl bg-[#0e0f16]/95 border border-white/[0.08] text-center max-w-xl mx-auto space-y-4">
               <div className="w-12 h-12 rounded-2xl bg-white/[0.05] border border-white/[0.1] flex items-center justify-center mx-auto text-white">
                 <GitHubIcon className="w-6 h-6" />
@@ -484,7 +555,7 @@ export const ProjectDetail: React.FC = () => {
               <div>
                 <h3 className="text-base font-semibold text-slate-100">Link GitHub Repository</h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  Connect a repository to stream commit activity, view open/merged pull requests, and automate delivery.
+                  Connect a repository to inspect the file explorer, commit graph, branches, and stream activity.
                 </p>
               </div>
 
@@ -538,213 +609,6 @@ export const ProjectDetail: React.FC = () => {
                   <span>Connect Repository</span>
                 </Button>
               </form>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Connected Repository Banner */}
-              <div className="p-4 rounded-xl bg-white/[0.02] border border-white/[0.08] flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-zinc-800 flex items-center justify-center text-white ring-1 ring-white/10">
-                    <GitHubIcon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-100 font-mono">
-                        {linkedRepo.repositoryOwner}/{linkedRepo.repositoryName}
-                      </span>
-                      <a
-                        href={linkedRepo.repositoryUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-slate-400 hover:text-white"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    </div>
-                    <span className="text-[11px] text-slate-500 block">
-                      Linked to DevSync Project • Webhook synchronization active
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => loadGitHubData(currentProject.id)}
-                    title="Refresh code activity"
-                    className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/[0.06] transition-colors"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isCodeLoading ? 'animate-spin' : ''}`} />
-                  </button>
-                  <button
-                    onClick={handleUnlinkRepository}
-                    className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-medium transition-colors flex items-center gap-1.5"
-                  >
-                    <Unlink className="w-3 h-3" />
-                    <span>Unlink</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Subtabs for Commits / PRs / Webhook */}
-              <div className="flex items-center justify-between border-b border-white/[0.06] pb-2">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCodeSubTab('COMMITS')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                      codeSubTab === 'COMMITS'
-                        ? 'bg-white/[0.08] text-white'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <GitCommit className="w-3.5 h-3.5" />
-                    <span>Recent Commits ({commits.length})</span>
-                  </button>
-                  <button
-                    onClick={() => setCodeSubTab('PRS')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                      codeSubTab === 'PRS'
-                        ? 'bg-white/[0.08] text-white'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <GitPullRequest className="w-3.5 h-3.5" />
-                    <span>Pull Requests ({pullRequests.length})</span>
-                  </button>
-                  <button
-                    onClick={() => setCodeSubTab('WEBHOOK')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                      codeSubTab === 'WEBHOOK'
-                        ? 'bg-white/[0.08] text-white'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    <span>Webhooks & Automation</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Commits List */}
-              {codeSubTab === 'COMMITS' && (
-                <div className="rounded-xl border border-white/[0.08] bg-[#0c0d13] overflow-hidden divide-y divide-white/[0.06]">
-                  {commits.length === 0 ? (
-                    <div className="p-8 text-center text-xs text-slate-500">
-                      No recent commits found or repository access restricted.
-                    </div>
-                  ) : (
-                    commits.map((c) => (
-                      <div key={c.sha} className="p-3.5 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Avatar src={c.authorAvatar} name={c.authorName} size="xs" />
-                          <div className="min-w-0">
-                            <span className="text-xs font-medium text-slate-200 truncate block">
-                              {c.message}
-                            </span>
-                            <span className="text-[11px] text-slate-500">
-                              {c.authorName} committed {formatTimeAgo(c.date)}
-                            </span>
-                          </div>
-                        </div>
-
-                        <a
-                          href={c.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-2 py-1 rounded bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300 hover:text-white border border-white/[0.08] text-[11px] font-mono shrink-0 transition-colors"
-                        >
-                          {c.shortSha}
-                        </a>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-
-              {/* PRs List */}
-              {codeSubTab === 'PRS' && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-1.5">
-                    {(['all', 'open', 'closed'] as const).map((filter) => (
-                      <button
-                        key={filter}
-                        onClick={() => {
-                          setPrFilter(filter);
-                          loadGitHubData(currentProject.id);
-                        }}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-colors ${
-                          prFilter === filter
-                            ? 'bg-brand-600 text-white'
-                            : 'text-slate-400 hover:text-slate-200 bg-white/[0.03]'
-                        }`}
-                      >
-                        {filter}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="rounded-xl border border-white/[0.08] bg-[#0c0d13] overflow-hidden divide-y divide-white/[0.06]">
-                    {pullRequests.length === 0 ? (
-                      <div className="p-8 text-center text-xs text-slate-500">
-                        No pull requests found matching current filter.
-                      </div>
-                    ) : (
-                      pullRequests.map((pr) => (
-                        <div key={pr.id} className="p-3.5 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-mono uppercase font-semibold shrink-0 ${
-                                pr.state === 'merged'
-                                  ? 'bg-purple-500/10 text-purple-400 border border-purple-500/25'
-                                  : pr.state === 'open'
-                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25'
-                                  : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                              }`}
-                            >
-                              {pr.state}
-                            </span>
-                            <div className="min-w-0">
-                              <span className="text-xs font-medium text-slate-200 truncate block">
-                                {pr.title}
-                              </span>
-                              <span className="text-[11px] text-slate-500">
-                                #{pr.number} opened by {pr.authorName} • {formatTimeAgo(pr.createdAt)}
-                              </span>
-                            </div>
-                          </div>
-
-                          <a
-                            href={pr.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1 shrink-0 font-medium"
-                          >
-                            <span>Open PR</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Webhook Configuration View */}
-              {codeSubTab === 'WEBHOOK' && (
-                <div className="p-5 rounded-xl border border-white/[0.08] bg-[#0c0d13] text-xs text-slate-300 space-y-3">
-                  <div className="flex items-center gap-2 text-emerald-400 font-semibold">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Automatic Task Completion via GitHub Webhook</span>
-                  </div>
-                  <p className="text-slate-400 text-xs leading-relaxed">
-                    When a pull request associated with any DevSync task is merged, the backend webhook handler automatically transitions the task to <strong className="text-white">DONE</strong> and writes a persistent audit log entry to PostgreSQL.
-                  </p>
-                  <div className="p-3 rounded-lg bg-black/40 border border-white/[0.06] font-mono text-[11px] text-zinc-300">
-                    <div>Payload URL: <span className="text-brand-400">http://localhost:5000/api/github/webhook</span></div>
-                    <div>Content type: <span className="text-zinc-400">application/json</span></div>
-                    <div>Secret: <span className="text-zinc-400">Configured via GITHUB_WEBHOOK_SECRET</span></div>
-                    <div>Event: <span className="text-amber-400">Pull requests</span></div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>

@@ -25,10 +25,15 @@ interface TaskState {
     dueDate?: string;
     projectId: string;
     assigneeId?: string;
+    reviewerId?: string;
+    reviewNotes?: string;
   }) => Promise<Task | null>;
   updateTask: (id: string, data: Partial<Task>) => Promise<Task | null>;
   updateTaskStatus: (id: string, status: TaskStatus, order?: number) => Promise<boolean>;
   deleteTask: (id: string) => Promise<boolean>;
+  submitForReview: (id: string, notes?: string) => Promise<boolean>;
+  requestChanges: (id: string, notes: string) => Promise<boolean>;
+  approveTask: (id: string, notes?: string) => Promise<boolean>;
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
@@ -151,6 +156,72 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       useUiStore.getState().addToast({
         type: 'error',
         message: err.message || 'Failed to delete task',
+      });
+      return false;
+    }
+  },
+
+  submitForReview: async (id: string, notes?: string) => {
+    try {
+      const res = await api.post<{ success: boolean; task: Task }>(`/tasks/${id}/submit-for-review`, { notes });
+      set((state) => ({
+        tasks: state.tasks.map((t) => (t.id === id ? res.task : t)),
+      }));
+      useUiStore.getState().addToast({
+        type: 'success',
+        title: 'Submitted for Review',
+        message: `Task is now in review`,
+      });
+      return true;
+    } catch (err: any) {
+      useUiStore.getState().addToast({
+        type: 'error',
+        title: 'Review Submission Failed',
+        message: err.message || 'Could not submit task for review',
+      });
+      return false;
+    }
+  },
+
+  requestChanges: async (id: string, notes: string) => {
+    try {
+      const res = await api.post<{ success: boolean; task: Task }>(`/tasks/${id}/request-changes`, { notes });
+      set((state) => ({
+        tasks: state.tasks.map((t) => (t.id === id ? res.task : t)),
+      }));
+      useUiStore.getState().addToast({
+        type: 'warning',
+        title: 'Changes Requested',
+        message: 'Feedback sent back to assignee',
+      });
+      return true;
+    } catch (err: any) {
+      useUiStore.getState().addToast({
+        type: 'error',
+        title: 'Action Failed',
+        message: err.message || 'Could not request changes',
+      });
+      return false;
+    }
+  },
+
+  approveTask: async (id: string, notes?: string) => {
+    try {
+      const res = await api.post<{ success: boolean; task: Task }>(`/tasks/${id}/approve`, { notes });
+      set((state) => ({
+        tasks: state.tasks.map((t) => (t.id === id ? res.task : t)),
+      }));
+      useUiStore.getState().addToast({
+        type: 'success',
+        title: 'Task Approved',
+        message: 'Task approved and moved to Done',
+      });
+      return true;
+    } catch (err: any) {
+      useUiStore.getState().addToast({
+        type: 'error',
+        title: 'Approval Failed',
+        message: err.message || 'Could not approve task',
       });
       return false;
     }

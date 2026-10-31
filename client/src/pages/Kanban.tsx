@@ -18,6 +18,7 @@ import {
   GripVertical,
   ArrowUpRight,
   SlidersHorizontal,
+  RotateCcw,
 } from 'lucide-react';
 import { useTaskStore } from '../store/taskStore';
 import { useProjectStore } from '../store/projectStore';
@@ -109,6 +110,15 @@ export const Kanban: React.FC = () => {
       topBarColor: 'bg-purple-500',
       badgeStyle: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
       dropHighlight: 'border-purple-500/70 bg-purple-500/10 ring-2 ring-purple-500/20',
+    },
+    {
+      status: 'CHANGES_REQUESTED',
+      title: 'Changes Req.',
+      icon: RotateCcw,
+      accentColor: 'text-orange-400',
+      topBarColor: 'bg-orange-500',
+      badgeStyle: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+      dropHighlight: 'border-orange-500/70 bg-orange-500/10 ring-2 ring-orange-500/20',
     },
     {
       status: 'DONE',

@@ -356,6 +356,72 @@ async function runAudit() {
     `Users: ${usersCount}, Projects: ${projectsCount}, Tasks: ${tasksCount}, Repos: ${reposCount}, TaskPRs: ${prLinksCount}`);
 
   // ==========================================
+  // 9. DEVSYNC 2.0 ADVANCED WORKFLOW AUDIT
+  // ==========================================
+  console.log('\n--- 9. DevSync 2.0 Project Hierarchy & Review Workflow ---');
+
+  // 9.1 Project Members & Hierarchy Retrieval
+  const membersRes = await request(`/projects/${testProjectId}/members`, { headers: authHeaders });
+  const membersPassed = membersRes.statusCode === 200 && Array.isArray(membersRes.data.members) && membersRes.data.currentUserRole === 'PROJECT_ADMIN';
+  record('DevSync 2.0', 'Project Members & Role Hierarchy retrieval', membersPassed);
+
+  // 9.2 Update Member Role
+  const updateRoleRes = await request(`/projects/${testProjectId}/members/${testUserId}`, {
+    method: 'PUT',
+    headers: authHeaders,
+    body: { role: 'PROJECT_ADMIN' },
+  });
+  record('DevSync 2.0', 'Update Project Member Role', updateRoleRes.statusCode === 200 && updateRoleRes.data.success);
+
+  // 9.3 Task Review Lifecycle: Submit for Review
+  const submitReviewRes = await request(`/tasks/${testTaskId}/submit-for-review`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: { notes: 'Implementation ready for architecture inspection' },
+  });
+  record('DevSync 2.0', 'Submit Task for Review (moves to REVIEW)', submitReviewRes.statusCode === 200 && submitReviewRes.data.task.status === 'REVIEW');
+
+  // 9.4 Task Review Lifecycle: Request Changes
+  const reqChangesRes = await request(`/tasks/${testTaskId}/request-changes`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: { notes: 'Please add circuit breaker timeouts and update error response tests' },
+  });
+  record('DevSync 2.0', 'Request Changes on Task (moves to CHANGES_REQUESTED)', reqChangesRes.statusCode === 200 && reqChangesRes.data.task.status === 'CHANGES_REQUESTED');
+
+  // 9.5 Task Review Lifecycle: Approve Work
+  const approveRes = await request(`/tasks/${testTaskId}/approve`, {
+    method: 'POST',
+    headers: authHeaders,
+    body: { notes: 'Approved after verification' },
+  });
+  record('DevSync 2.0', 'Approve Task (moves to DONE)', approveRes.statusCode === 200 && approveRes.data.task.status === 'DONE');
+
+  // 9.6 Team Activity Unified Timeline
+  const teamActivityRes = await request(`/projects/${testProjectId}/team-activity`, { headers: authHeaders });
+  record('DevSync 2.0', 'Team Activity Unified Timeline', teamActivityRes.statusCode === 200 && Array.isArray(teamActivityRes.data.timeline));
+
+  // 9.7 GitHub Visualizer: Contents Endpoint
+  const contentsRes = await request(`/github/projects/${testProjectId}/contents`, { headers: authHeaders });
+  record('DevSync 2.0', 'GitHub Contents API Endpoint', contentsRes.statusCode === 200);
+
+  // 9.8 GitHub Visualizer: Branches Endpoint
+  const branchesRes = await request(`/github/projects/${testProjectId}/branches`, { headers: authHeaders });
+  record('DevSync 2.0', 'GitHub Branches API Endpoint', branchesRes.statusCode === 200);
+
+  // 9.9 GitHub Visualizer: Commit Graph DAG Endpoint
+  const graphRes = await request(`/github/projects/${testProjectId}/commit-graph`, { headers: authHeaders });
+  record('DevSync 2.0', 'GitHub Interactive Commit Graph Endpoint', graphRes.statusCode === 200);
+
+  // 9.10 GitHub Visualizer: Contributors Endpoint
+  const contribRes = await request(`/github/projects/${testProjectId}/contributors`, { headers: authHeaders });
+  record('DevSync 2.0', 'GitHub Contributors API Endpoint', contribRes.statusCode === 200);
+
+  // 9.11 GitHub Visualizer: Collaborators Endpoint
+  const collabRes = await request(`/github/projects/${testProjectId}/collaborators`, { headers: authHeaders });
+  record('DevSync 2.0', 'GitHub Collaborators API Endpoint', collabRes.statusCode === 200);
+
+  // ==========================================
   // CLEANUP TEST FIXTURES (SAFE - test created only)
   // ==========================================
   console.log('\n--- Cleaning up test fixtures ---');

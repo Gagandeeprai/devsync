@@ -1,6 +1,6 @@
 import React from 'react';
 import { useUiStore } from '../../store/uiStore';
-import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 export const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useUiStore();
@@ -12,6 +12,7 @@ export const ToastContainer: React.FC = () => {
       {toasts.map((toast) => {
         const isSuccess = toast.type === 'success';
         const isError = toast.type === 'error';
+        const isWarning = toast.type === 'warning';
 
         return (
           <div
@@ -21,13 +22,16 @@ export const ToastContainer: React.FC = () => {
                 ? 'bg-[#0f1712]/95 border-emerald-500/30 text-emerald-200'
                 : isError
                 ? 'bg-[#1a0f12]/95 border-rose-500/30 text-rose-200'
+                : isWarning
+                ? 'bg-[#1a150f]/95 border-amber-500/30 text-amber-200'
                 : 'bg-[#12131a]/95 border-brand-500/30 text-slate-200'
             }`}
           >
             <div className="mt-0.5 shrink-0">
               {isSuccess && <CheckCircle2 className="w-5 h-5 text-emerald-400" />}
               {isError && <AlertCircle className="w-5 h-5 text-rose-400" />}
-              {!isSuccess && !isError && <Info className="w-5 h-5 text-brand-400" />}
+              {isWarning && <AlertTriangle className="w-5 h-5 text-amber-400" />}
+              {!isSuccess && !isError && !isWarning && <Info className="w-5 h-5 text-brand-400" />}
             </div>
 
             <div className="flex-1 text-sm">

@@ -104,10 +104,16 @@ export const STATUS_CONFIG: Record<
     border: 'border-amber-800/30',
   },
   REVIEW: {
-    label: 'Review',
+    label: 'In Review',
     bg: 'bg-purple-950/30',
     text: 'text-purple-400',
     border: 'border-purple-800/30',
+  },
+  CHANGES_REQUESTED: {
+    label: 'Changes Requested',
+    bg: 'bg-orange-950/40',
+    text: 'text-orange-400',
+    border: 'border-orange-800/40',
   },
   DONE: {
     label: 'Done',

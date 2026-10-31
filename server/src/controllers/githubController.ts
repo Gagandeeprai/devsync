@@ -667,3 +667,488 @@ export const handleWebhook = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+/**
+ * 14. GET /api/github/projects/:projectId/contents
+ * Repository File Explorer: browse directories and files
+ */
+export const getRepositoryContents = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { projectId } = req.params;
+    const path = (req.query.path as string) || '';
+
+    const projectRepo = await prisma.projectRepository.findUnique({ where: { projectId } });
+    if (!projectRepo) {
+      res.json({ success: true, contents: [], linked: false });
+      return;
+    }
+
+    const auth = await getDecryptedTokenForUser(req.user!.userId);
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github.v3+json',
+      'User-Agent': 'DevSync-Platform',
+    };
+    if (auth?.token) headers['Authorization'] = `Bearer ${auth.token}`;
+
+    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+    const url = `https://api.github.com/repos/${projectRepo.repositoryOwner}/${projectRepo.repositoryName}/contents/${cleanPath}`;
+
+    const response = await fetch(url, { headers });
+    if (!response.ok) {
+      res.json({
+        success: true,
+        contents: [],
+        path: cleanPath,
+        repository: projectRepo,
+        error: 'Could not fetch directory contents from GitHub',
+        linked: true,
+      });
+      return;
+    }
+
+    const data: any = await response.json();
+    const items = Array.isArray(data)
+      ? data.map((item: any) => ({
+          name: item.name,
+          path: item.path,
+          sha: item.sha,
+          size: item.size,
+          type: item.type as 'file' | 'dir',
+          html_url: item.html_url,
+          download_url: item.download_url,
+        })).sort((a: any, b: any) => {
+          if (a.type === b.type) return a.name.localeCompare(b.name);
+          return a.type === 'dir' ? -1 : 1;
+        })
+      : [data];
+
+    res.json({
+      success: true,
+      path: cleanPath,
+      contents: items,
+      repository: projectRepo,
+      linked: true,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * 15. GET /api/github/projects/:projectId/branches
+ * Branch Explorer: list branches, default branch, comparison links
+ */
+export const getBranches = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { projectId } = req.params;
+
+    const projectRepo = await prisma.projectRepository.findUnique({ where: { projectId } });
+    if (!projectRepo) {
+      res.json({ success: true, branches: [], linked: false });
+      return;
+    }
+
+    const auth = await getDecryptedTokenForUser(req.user!.userId);
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github.v3+json',
+      'User-Agent': 'DevSync-Platform',
+    };
+    if (auth?.token) headers['Authorization'] = `Bearer ${auth.token}`;
+
+    const response = await fetch(
+      `https://api.github.com/repos/${projectRepo.repositoryOwner}/${projectRepo.repositoryName}/branches?per_page=30`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      res.json({
+        success: true,
+        defaultBranch: projectRepo.defaultBranch || 'main',
+        branches: [],
+        repository: projectRepo,
+        error: 'Could not fetch repository branches',
+        linked: true,
+      });
+      return;
+    }
+
+    const branchesData: any = await response.json();
+    const branches = Array.isArray(branchesData)
+      ? branchesData.map((b: any) => ({
+          name: b.name,
+          sha: b.commit?.sha,
+          commitUrl: b.commit?.url,
+          isProtected: b.protected || false,
+          isDefault: b.name === (projectRepo.defaultBranch || 'main'),
+          compareUrl: `https://github.com/${projectRepo.repositoryOwner}/${projectRepo.repositoryName}/compare/${projectRepo.defaultBranch || 'main'}...${b.name}`,
+        }))
+      : [];
+
+    res.json({
+      success: true,
+      defaultBranch: projectRepo.defaultBranch || 'main',
+      branches,
+      repository: projectRepo,
+      linked: true,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * 16. GET /api/github/projects/:projectId/commit-graph
+ * Interactive Commit Graph: commits DAG with parent-child connections
+ */
+export const getCommitGraph = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { projectId } = req.params;
+    const branch = req.query.branch as string;
+
+    const projectRepo = await prisma.projectRepository.findUnique({ where: { projectId } });
+    if (!projectRepo) {
+      res.json({ success: true, nodes: [], edges: [], linked: false });
+      return;
+    }
+
+    const auth = await getDecryptedTokenForUser(req.user!.userId);
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github.v3+json',
+      'User-Agent': 'DevSync-Platform',
+    };
+    if (auth?.token) headers['Authorization'] = `Bearer ${auth.token}`;
+
+    const targetBranch = branch || projectRepo.defaultBranch || 'main';
+    const response = await fetch(
+      `https://api.github.com/repos/${projectRepo.repositoryOwner}/${projectRepo.repositoryName}/commits?sha=${encodeURIComponent(targetBranch)}&per_page=35`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      res.json({
+        success: true,
+        branch: targetBranch,
+        nodes: [],
+        edges: [],
+        totalCommits: 0,
+        repository: projectRepo,
+        error: 'Could not fetch commit graph from GitHub',
+        linked: true,
+      });
+      return;
+    }
+
+    const commitsData: any = await response.json();
+    if (!Array.isArray(commitsData)) {
+      res.json({ success: true, nodes: [], edges: [], linked: true });
+      return;
+    }
+
+    const nodes = commitsData.map((c: any, index: number) => ({
+      sha: c.sha,
+      shortSha: c.sha.substring(0, 7),
+      message: c.commit?.message?.split('\n')[0] || 'No message',
+      authorName: c.commit?.author?.name || c.author?.login || 'Unknown',
+      authorAvatar: c.author?.avatar_url || null,
+      date: c.commit?.author?.date || c.commit?.committer?.date,
+      parents: Array.isArray(c.parents) ? c.parents.map((p: any) => p.sha) : [],
+      html_url: c.html_url,
+      order: index,
+    }));
+
+    const nodeShaSet = new Set(nodes.map((n: any) => n.sha));
+    const edges: Array<{ source: string; target: string }> = [];
+
+    nodes.forEach((node: any) => {
+      node.parents.forEach((parentSha: string) => {
+        if (nodeShaSet.has(parentSha)) {
+          edges.push({ source: parentSha, target: node.sha });
+        }
+      });
+    });
+
+    res.json({
+      success: true,
+      branch: targetBranch,
+      nodes,
+      edges,
+      totalCommits: nodes.length,
+      repository: projectRepo,
+      linked: true,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * 17. GET /api/github/projects/:projectId/contributors
+ * Repository Contributors and contribution stats
+ */
+export const getContributors = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { projectId } = req.params;
+
+    const projectRepo = await prisma.projectRepository.findUnique({ where: { projectId } });
+    if (!projectRepo) {
+      res.json({ success: true, contributors: [], linked: false });
+      return;
+    }
+
+    const auth = await getDecryptedTokenForUser(req.user!.userId);
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github.v3+json',
+      'User-Agent': 'DevSync-Platform',
+    };
+    if (auth?.token) headers['Authorization'] = `Bearer ${auth.token}`;
+
+    const response = await fetch(
+      `https://api.github.com/repos/${projectRepo.repositoryOwner}/${projectRepo.repositoryName}/contributors?per_page=30`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      res.json({ success: true, contributors: [], linked: true });
+      return;
+    }
+
+    const data: any = await response.json();
+    const contributors = Array.isArray(data)
+      ? data.map((c: any) => ({
+          login: c.login,
+          avatarUrl: c.avatar_url,
+          contributions: c.contributions,
+          html_url: c.html_url,
+          type: c.type,
+        }))
+      : [];
+
+    res.json({ success: true, contributors, linked: true });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * 18. POST /api/github/projects/:projectId/create-repository
+ * Automated Repository Provisioning on GitHub
+ */
+export const createRepository = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { projectId } = req.params;
+    const { name, description, isPrivate, autoInit } = req.body;
+
+    if (!name || typeof name !== 'string') {
+      res.status(400).json({ success: false, message: 'Repository name is required' });
+      return;
+    }
+
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) {
+      res.status(404).json({ success: false, message: 'Project not found' });
+      return;
+    }
+
+    const auth = await getDecryptedTokenForUser(req.user!.userId);
+    if (!auth || !auth.token) {
+      res.status(400).json({
+        success: false,
+        message: 'You must connect your GitHub account in Settings before creating repositories',
+      });
+      return;
+    }
+
+    const ghResponse = await fetch('https://api.github.com/user/repos', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${auth.token}`,
+        Accept: 'application/vnd.github.v3+json',
+        'User-Agent': 'DevSync-Platform',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: name.trim().replace(/\s+/g, '-'),
+        description: description?.trim() || `DevSync repository for project ${project.name}`,
+        private: !!isPrivate,
+        auto_init: autoInit !== false,
+      }),
+    });
+
+    if (!ghResponse.ok) {
+      const errData: any = await ghResponse.json().catch(() => ({}));
+      res.status(ghResponse.status).json({
+        success: false,
+        message: errData.message || 'Failed to create GitHub repository. Check permissions or repository name.',
+      });
+      return;
+    }
+
+    const newRepo: any = await ghResponse.json();
+
+    // Link newly created repo to project
+    const linked = await prisma.projectRepository.upsert({
+      where: { projectId },
+      update: {
+        repositoryId: String(newRepo.id),
+        repositoryName: newRepo.name,
+        repositoryOwner: newRepo.owner.login,
+        repositoryUrl: newRepo.html_url,
+        defaultBranch: newRepo.default_branch || 'main',
+        isPrivate: newRepo.private,
+      },
+      create: {
+        projectId,
+        repositoryId: String(newRepo.id),
+        repositoryName: newRepo.name,
+        repositoryOwner: newRepo.owner.login,
+        repositoryUrl: newRepo.html_url,
+        defaultBranch: newRepo.default_branch || 'main',
+        isPrivate: newRepo.private,
+      },
+    });
+
+    await prisma.activity.create({
+      data: {
+        action: 'GITHUB_REPO_PROVISIONED',
+        details: `Provisioned new GitHub repository ${newRepo.owner.login}/${newRepo.name}`,
+        userId: req.user!.userId,
+        projectId,
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'GitHub repository created and linked successfully',
+      repository: linked,
+      cloneUrl: newRepo.clone_url,
+      sshUrl: newRepo.ssh_url,
+      cloneCommands: [
+        `git clone ${newRepo.clone_url}`,
+        `cd ${newRepo.name}`,
+        `git checkout -b main`,
+      ],
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * 19. GET /api/github/projects/:projectId/collaborators
+ * List repository collaborators
+ */
+export const listCollaborators = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { projectId } = req.params;
+
+    const projectRepo = await prisma.projectRepository.findUnique({ where: { projectId } });
+    if (!projectRepo) {
+      res.json({ success: true, collaborators: [], linked: false });
+      return;
+    }
+
+    const auth = await getDecryptedTokenForUser(req.user!.userId);
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github.v3+json',
+      'User-Agent': 'DevSync-Platform',
+    };
+    if (auth?.token) headers['Authorization'] = `Bearer ${auth.token}`;
+
+    const response = await fetch(
+      `https://api.github.com/repos/${projectRepo.repositoryOwner}/${projectRepo.repositoryName}/collaborators?per_page=30`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      res.json({ success: true, collaborators: [], linked: true, error: 'Could not fetch collaborators' });
+      return;
+    }
+
+    const data: any = await response.json();
+    const collaborators = Array.isArray(data)
+      ? data.map((c: any) => ({
+          login: c.login,
+          avatarUrl: c.avatar_url,
+          permissions: c.permissions,
+          html_url: c.html_url,
+        }))
+      : [];
+
+    res.json({ success: true, collaborators, linked: true });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * 20. POST /api/github/projects/:projectId/collaborators
+ * Invite a collaborator to the GitHub repository
+ */
+export const inviteCollaborator = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { projectId } = req.params;
+    const { username, permission } = req.body;
+
+    if (!username) {
+      res.status(400).json({ success: false, message: 'GitHub username is required' });
+      return;
+    }
+
+    const projectRepo = await prisma.projectRepository.findUnique({ where: { projectId } });
+    if (!projectRepo) {
+      res.status(404).json({ success: false, message: 'No GitHub repository linked to this project' });
+      return;
+    }
+
+    const auth = await getDecryptedTokenForUser(req.user!.userId);
+    if (!auth || !auth.token) {
+      res.status(400).json({ success: false, message: 'GitHub connection required' });
+      return;
+    }
+
+    const response = await fetch(
+      `https://api.github.com/repos/${projectRepo.repositoryOwner}/${projectRepo.repositoryName}/collaborators/${username}`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${auth.token}`,
+          Accept: 'application/vnd.github.v3+json',
+          'User-Agent': 'DevSync-Platform',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          permission: permission || 'push', // pull, push, admin, maintain, triage
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errData: any = await response.json().catch(() => ({}));
+      res.status(response.status).json({
+        success: false,
+        message: errData.message || 'Failed to send GitHub invitation',
+      });
+      return;
+    }
+
+    const data: any = await response.json().catch(() => ({}));
+
+    await prisma.activity.create({
+      data: {
+        action: 'GITHUB_COLLABORATOR_INVITED',
+        details: `Invited @${username} to repository ${projectRepo.repositoryName}`,
+        userId: req.user!.userId,
+        projectId,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Invitation sent to @${username}. They must accept it on GitHub.`,
+      invitation: data,
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
