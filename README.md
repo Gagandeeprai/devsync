@@ -7,6 +7,29 @@
 
 ---
 
+## 📚 Complete Technical Documentation (`docs/`)
+
+Comprehensive architectural, technical, and academic defense documentation is available in the [`docs/`](docs/) directory:
+
+- 📖 [Project Overview](docs/PROJECT_OVERVIEW.md) — Problem statement, target personas, and industry comparison.
+- 🛠️ [Technology Stack](docs/TECH_STACK.md) — Comprehensive verified stack across frontend, backend, database, and APIs.
+- 🏛️ [System Architecture](docs/SYSTEM_ARCHITECTURE.md) — End-to-end component interaction and Mermaid architecture diagrams.
+- 💻 [Frontend Architecture](docs/FRONTEND_ARCHITECTURE.md) — React 18, Zustand state management, design system, and pages.
+- ⚙️ [Backend Architecture](docs/BACKEND_ARCHITECTURE.md) — Express middleware pipeline, dual-tier RBAC, error handling, and logger.
+- 📑 [REST API Reference](docs/API_REFERENCE.md) — Complete specification of all 37 implemented endpoints.
+- 🗄️ [Database Design](docs/DATABASE_DESIGN.md) — Prisma schema, Mermaid ER diagram, cascading rules, and indexes.
+- 🔐 [Authentication & Security](docs/AUTHENTICATION_AND_SECURITY.md) — JWT, bcrypt, Google OAuth, and AES-256-GCM token encryption.
+- 🐙 [GitHub Integration](docs/GITHUB_INTEGRATION.md) — OAuth, repository provisioning, file tree explorer, commit DAG, and webhooks.
+- 🌐 [Google OAuth 2.0](docs/GOOGLE_OAUTH.md) — OIDC SSO sequence, account linking, and token hydration.
+- 🔄 [Application Workflows](docs/APPLICATION_WORKFLOWS.md) — Step-by-step technical execution traces from UI to PostgreSQL.
+- 🚀 [Setup & Execution Guide](docs/SETUP_AND_EXECUTION.md) — Exact local startup commands and pgAdmin 4 inspection.
+- 🧪 [Testing & Verification Report](docs/TESTING.md) — 40-test automated audit suite and QA matrix.
+- 🔭 [Limitations & Future Scope](docs/LIMITATIONS_AND_FUTURE_SCOPE.md) — Objective architectural constraints and roadmap.
+- 🎓 [University Viva & Defense Guide](docs/VIVA_QUESTIONS.md) — 40+ examiner questions and detailed technical answers.
+- 🎤 [Project Presentation Script](docs/PROJECT_PRESENTATION.md) — 2-minute elevator pitch and live evaluation walkthrough.
+
+---
+
 ## 📌 Executive Summary
 
 **DevSync** is a developer collaboration and project delivery platform inspired by modern engineering tools such as Linear. Built with a focus on high throughput, responsive drag-and-drop workflows, and clean architectural separation of concerns, DevSync allows development teams to manage repositories, coordinate issue tracking, visualize delivery pipelines across a 5-stage Kanban board, and monitor engineering velocity in real time.
