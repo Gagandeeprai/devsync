@@ -195,3 +195,4 @@ It has an expiration of 7 days (`7d`). The client sends it via header `Authoriza
 1. **WebSockets via Socket.io:** For real-time multi-user cursor tracking and instant drag-and-drop board updates.
 2. **Redis Caching:** For GitHub commit graphs and repository file trees to conserve API rate limits.
 3. **CI/CD Integration:** Querying GitHub Actions workflow runs to display live build pass/fail status directly on linked task cards.
+

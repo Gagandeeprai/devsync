@@ -176,3 +176,4 @@ A unified tabbed workspace containing:
 - Columns correspond to `TaskStatus`: `TODO`, `IN_PROGRESS`, `REVIEW`, `CHANGES_REQUESTED`, `DONE`.
 - Dragging a card recalculates its `order` float value (halfway between adjacent cards) and triggers `PATCH /api/tasks/:id/status` to maintain persistent positioning across reloads.
 - Clicking any card opens `TaskDetailModal.tsx` for review feedback, PR inspection, or status updating.
+

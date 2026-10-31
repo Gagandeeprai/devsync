@@ -102,3 +102,4 @@ useEffect(() => {
 }, []);
 ```
 The token is safely extracted, persisted to `localStorage`, and the browser URL is sanitized via `replace: true`.
+

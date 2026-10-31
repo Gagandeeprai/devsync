@@ -120,3 +120,4 @@ Under **Create Project Modal** (`client/src/components/modals/CreateProjectModal
    [GITHUB] Pull request #42 merged into main
    [TASK] Task auto-completed via PR #42
    ```
+

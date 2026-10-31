@@ -180,3 +180,4 @@ To inspect the tables, constraints, foreign keys, and indexes visually:
    - `ProjectRepository`
    - `TaskPullRequest`
 5. Right-click any table and choose **View/Edit Data → All Rows** to inspect records in real time.
+

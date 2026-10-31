@@ -153,3 +153,4 @@ Powered by **Winston**, the logging engine provides colorized, timestamped categ
 - Custom ANSI colors: `AUTH` (Cyan), `PROJECT` (Blue), `TASK` (Magenta), `GITHUB` (Yellow), `SYSTEM` (Green), `ERROR` (Red).
 - Automatically scrubs sensitive keys (`password`, `passwordHash`, `token`, `accessToken`, `secret`, `authorization`).
 - Can be switched to standardized JSON output in production via `NODE_ENV=production`.
+

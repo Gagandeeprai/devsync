@@ -100,3 +100,4 @@ When presenting DevSync live, follow this 5-step walkthrough:
    - Bring up the backend terminal.
    - Highlight the colorized activity stream: `[AUTH]`, `[PROJECT]`, `[TASK]`, `[GITHUB]`.
    - Explain that merging a pull request triggers the HMAC SHA-256 webhook, automatically closing the ticket and logging the event to PostgreSQL and the terminal.
+

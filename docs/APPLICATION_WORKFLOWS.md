@@ -148,3 +148,4 @@ This document traces the exact step-by-step lifecycle of every major user workfl
 3. **Verification:** Validates `x-hub-signature-256` using `crypto.timingSafeEqual`.
 4. **Task Resolution:** Matches `pullRequestNumber = 14` in `TaskPullRequest`.
 5. **Auto-Completion:** Automatically transitions the associated task to `DONE` and creates an activity entry.
+

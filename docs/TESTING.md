@@ -70,3 +70,4 @@ npm test
 - **TypeScript Builds:** Frontend (`client`) and Backend (`server`) compile with **0 errors**.
 - **Database Integrity:** No orphaned records or foreign key constraint violations detected.
 - **Production Build:** `npm run build` succeeds cleanly across both submodules.
+

@@ -86,3 +86,4 @@ Base URL: `http://localhost:5000/api`
 |---|---|---|---|---|---|---|
 | `GET` | `/api/dashboard/stats` | Aggregated user and platform stats | Bearer JWT | None | `{ success: true, stats: { totalProjects, totalTasks, inProgressTasks, completedTasks, recentActivity } }` | None (SELECT aggregation) |
 | `GET` | `/api/users` | List team users for assignees | Bearer JWT | None | `{ success: true, users: [...] }` | None (SELECT `User`) |
+

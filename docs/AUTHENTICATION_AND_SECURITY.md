@@ -126,3 +126,4 @@ GitHub sends webhooks to `POST /api/github/webhook`. To guarantee that payloads 
 | **Credential Redaction** | ✅ Fully Implemented | Winston logger scrubs passwords, tokens, auth headers |
 | **Rate Limiting** | ⚠️ Planned Scope | Not yet enforced on `/api/auth/login` |
 | **Refresh Token Rotation** | ⚠️ Planned Scope | Single 7-day access token currently used |
+
