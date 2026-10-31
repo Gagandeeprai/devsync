@@ -7,6 +7,7 @@ import {
   initiateGoogleAuth,
   handleGoogleCallback,
   googleTokenAuth,
+  getGoogleClientId,
 } from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
 
@@ -20,6 +21,7 @@ router.put('/profile', authenticate, updateProfile);
 // Google OAuth
 router.get('/google', initiateGoogleAuth);
 router.get('/google/callback', handleGoogleCallback);
+router.get('/google/client-id', getGoogleClientId);
 router.post('/google/token', googleTokenAuth);
 
 export default router;

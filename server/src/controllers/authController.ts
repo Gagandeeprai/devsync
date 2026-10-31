@@ -425,4 +425,11 @@ export const googleTokenAuth = async (req: Request, res: Response, next: NextFun
   }
 };
 
+export const getGoogleClientId = async (req: Request, res: Response): Promise<void> => {
+  res.json({
+    success: true,
+    clientId: process.env.GOOGLE_CLIENT_ID || null,
+  });
+};
+
 

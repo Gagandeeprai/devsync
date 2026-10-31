@@ -506,19 +506,26 @@ export const linkPullRequestToTask = async (req: AuthenticatedRequest, res: Resp
       return;
     }
 
-    const linkedPr = await prisma.taskPullRequest.upsert({
+    // Check for existing link to prevent duplicate associations
+    const existing = await prisma.taskPullRequest.findUnique({
       where: {
         taskId_pullRequestNumber: {
           taskId,
           pullRequestNumber: Number(pullRequestNumber),
         },
       },
-      update: {
-        pullRequestTitle: pullRequestTitle || `Pull Request #${pullRequestNumber}`,
-        pullRequestUrl,
-        pullRequestState: pullRequestState || 'open',
-      },
-      create: {
+    });
+
+    if (existing) {
+      res.status(409).json({
+        success: false,
+        message: `Pull Request #${pullRequestNumber} is already linked to this task`,
+      });
+      return;
+    }
+
+    const linkedPr = await prisma.taskPullRequest.create({
+      data: {
         taskId,
         repositoryId: String(repositoryId || '0'),
         pullRequestNumber: Number(pullRequestNumber),
