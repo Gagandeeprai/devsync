@@ -12,7 +12,7 @@ const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(80, 'Name must not exceed 80 characters'),
   email: z.string().email('Invalid email address').max(120, 'Email must not exceed 120 characters'),
   password: z.string().min(6, 'Password must be at least 6 characters').max(72, 'Password must not exceed 72 characters'),
-  role: z.enum(['ADMIN', 'LEAD', 'DEVELOPER']).optional(),
+  role: z.enum(['ADMIN', 'LEAD', 'DEVELOPER', 'INTERN', 'HR']).optional(),
   avatarUrl: z.string().url().optional().or(z.literal('')),
 });
 

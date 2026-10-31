@@ -4,12 +4,14 @@ import { Layers, ArrowRight, Lock, Mail, User as UserIcon, Eye, EyeOff } from 'l
 import { useAuthStore } from '../store/authStore';
 import { Button } from '../components/ui/Button';
 
+import { UserRole } from '../types';
+
 export const Register: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<'DEVELOPER' | 'LEAD'>('DEVELOPER');
+  const [role, setRole] = useState<UserRole>('DEVELOPER');
   const { register, isLoading } = useAuthStore();
   const navigate = useNavigate();
 
@@ -86,11 +88,13 @@ export const Register: React.FC = () => {
               </label>
               <select
                 value={role}
-                onChange={(e) => setRole(e.target.value as any)}
-                className="w-full px-3.5 py-2.5 bg-surface-200 border border-surface-border rounded-xl text-slate-200 text-sm focus:outline-none focus:border-brand-500"
+                onChange={(e) => setRole(e.target.value as UserRole)}
+                className="w-full px-3.5 py-2.5 bg-surface-200 border border-surface-border rounded-xl text-slate-200 text-sm focus:outline-none focus:border-brand-500 cursor-pointer"
               >
                 <option value="DEVELOPER">Developer / Engineer</option>
                 <option value="LEAD">Team Lead / Architect</option>
+                <option value="INTERN">Intern</option>
+                <option value="HR">Human Resources (HR)</option>
               </select>
             </div>
 

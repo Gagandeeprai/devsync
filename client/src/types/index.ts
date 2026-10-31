@@ -1,7 +1,7 @@
 export type ProjectStatus = 'PLANNING' | 'IN_PROGRESS' | 'COMPLETED' | 'ON_HOLD';
 export type TaskStatus = 'BACKLOG' | 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-export type UserRole = 'ADMIN' | 'LEAD' | 'DEVELOPER';
+export type UserRole = 'ADMIN' | 'LEAD' | 'DEVELOPER' | 'INTERN' | 'HR';
 
 export interface User {
   id: string;

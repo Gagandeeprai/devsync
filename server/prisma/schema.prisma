@@ -33,6 +33,8 @@ enum UserRole {
   ADMIN
   LEAD
   DEVELOPER
+  INTERN
+  HR
 }
 
 model User {
